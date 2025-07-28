@@ -176,7 +176,8 @@ var validateMail = function (val) {
     // ***@***.***
     // ***.***@**.***
     // ***.***@**.**.***
-    if (val.match(/^[A-Za-z0-9]{1}[A-Za-z0-9_.+-]*@[A-Za-z0-9_.-]+\.[A-Za-z0-9]+$/) == null) {
+    //if (val.match(/^[A-Za-z0-9]{1}[A-Za-z0-9_.+-]*@[A-Za-z0-9_.-]+\.[A-Za-z0-9]+$/) == null) {
+    if (val.match(/^[A-Za-z0-9][A-Za-z0-9_.+-]{0,63}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/) == null) {
         return false;
     } else {
         return true;

@@ -191,7 +191,7 @@ var validateMail = function (val) {
 var validateTel = function (val) {
 
     // 半角数値と-(ハイフン)のみであるか
-    if (val.match(/^[0-9]{2,4}-[0-9]{2,4}-[0-9]{3,4}$/) == null) {
+    if (val.match(/^[0-9]{2,5}-[0-9]{2,4}-[0-9]{3,4}$/) == null) {
         return false;
     } else {
         return true;

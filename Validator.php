@@ -31,14 +31,139 @@ class Validator
             $this->error_message['birth_date'] = '生年月日が入力されていません';
         } elseif (!$this->isValidDate($data['birth_year'] ?? '', $data['birth_month'] ?? '', $data['birth_day'] ?? '')) {
             $this->error_message['birth_date'] = '生年月日が正しくありません';
+        } else {
+            // 1. 日付文字列を作る（YYYY-MM-DD）
+            $birth_date_str = sprintf(
+                '%04d-%02d-%02d',
+                $data['birth_year'],
+                $data['birth_month'],
+                $data['birth_day']
+            );
+
+            // 2. DateTimeオブジェクトに変換
+            $birth_date = DateTime::createFromFormat('Y-m-d', $birth_date_str);
+
+            // 3. 今日の日付
+            $today = new DateTime('today');
+
+            // 4. 未来日かチェック
+            if ($birth_date >= $today) {
+                //echo "未来日です。生年月日として正しくありません。";
+                $this->error_message['birth_date'] = '未来日です。生年月日として正しくありません。';
+            } else {
+                //echo "問題なし。過去日か今日の日付です。";
+                $this->error_message['birth_date'] = '問題なし。過去日か今日の日付です。';
+            }
         }
 
+
+
+
+
+
+
         // 郵便番号
+        // if (empty($data['postal_code'])) {
+        //     $this->error_message['postal_code'] = '郵便番号が入力されていません';
+        // } elseif (!preg_match('/^[0-9]{3}-[0-9]{4}$/', $data['postal_code'] ?? '')) {
+        //     $this->error_message['postal_code'] = '郵便番号が正しくありません';
+        // } else {
+        // // 1. ユーザー入力
+        //     $input_zip = $data['postal_code'];
+        // // 2. ハイフンを除去
+        //     $clean_zip = str_replace("-", "", $input_zip); // → "1234567"
+
+        //     // 3. データベース接続（PDO）
+        //     $host = 'localhost';
+        //     $dbname = 'minisystem_relation';
+        //     $user = 'root';
+        //     $password = 'proclimb';
+        //     $charset = 'utf8mb4';
+        //     try {
+        //         $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $password);
+        //         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        //     // 4. 郵便番号が存在するかチェック
+        //         $stmt = $pdo->prepare("SELECT COUNT(*) FROM address_master WHERE postal_code = $clean_zip");
+        //         $stmt->execute([':postal_code' => $clean_zip]);
+        //         $count = $stmt->fetchColumn();
+
+        //         if ($count > 0) {
+        //             //echo "郵便番号 {$clean_zip} は既に存在します。";
+        //             $this->error_message['postal_code'] = '郵便番号 {$clean_zip} は既に存在します。';
+        //         } else {
+        //             //echo "郵便番号 {$clean_zip} は未登録です。";
+        //             $this->error_message['postal_code'] = '郵便番号 {$clean_zip} は既に存在します。';
+        //         }
+        //     }
+        // }
         if (empty($data['postal_code'])) {
             $this->error_message['postal_code'] = '郵便番号が入力されていません';
-        } elseif (!preg_match('/^[0-9]{3}-[0-9]{4}$/', $data['postal_code'] ?? '')) {
+        } elseif (!preg_match('/^[0-9]{3}-[0-9]{4}$/', $data['postal_code'])) {
             $this->error_message['postal_code'] = '郵便番号が正しくありません';
+        } else {
+            // 1. ユーザー入力
+            $input_zip = $data['postal_code'];
+            // 2. ハイフンを除去
+            $clean_zip = str_replace("-", "", $input_zip); // "1234567"
+
+            // 3. データベース接続（PDO）
+            $host = 'localhost';
+            $dbname = 'minisystem_relation';
+            $user = 'root';
+            $password = 'proclimb';
+            $charset = 'utf8mb4';
+
+            try {
+                $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=$charset", $user, $password);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                // 4. 郵便番号が存在するかチェック
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM address_master WHERE postal_code = :postal_code");
+                $stmt->execute([':postal_code' => $clean_zip]);
+                $count = $stmt->fetchColumn();
+
+                if ($count == 0) {
+                    //     $this->error_message['postal_code'] = "郵便番号 {$clean_zip} は既に存在します。";
+                    // } else {
+                    $this->error_message['postal_code'] = "郵便番号が見つかりません";
+                }
+            } catch (PDOException $e) {
+                $this->error_message['postal_code'] = 'データベースエラー: ' . $e->getMessage();
+            }
         }
+        // //郵便番号検索
+        // // 1. ユーザー入力
+        // if (!empty($data['postal_code'])){
+        //     $input_zip = $data['postal_code'];
+        // // 2. ハイフンを除去
+        //     $clean_zip = str_replace("-", "", $input_zip); // → "1234567"
+
+        //     // 3. データベース接続（PDO）
+        //     $host = 'localhost';
+        //     $dbname = 'minisystem_relation';
+        //     $user = 'root';
+        //     $password = 'proclimb';
+        //     $charset = 'utf8mb4';
+        //     try {
+        //         $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $password);
+        //         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        //     // 4. 郵便番号が存在するかチェック
+        //         $stmt = $pdo->prepare("SELECT COUNT(*) FROM address_master WHERE postal_code = $clean_zip");
+        //         $stmt->execute([':postal_code' => $clean_zip]);
+        //         $count = $stmt->fetchColumn();
+
+        //         if ($count > 0) {
+        //             echo "郵便番号 {$clean_zip} は既に存在します。";
+        //         } else {
+        //             echo "郵便番号 {$clean_zip} は未登録です。";
+        //         }
+        //     }
+        // }
+
+
+
+
+
 
         // 住所
         if (empty($data['prefecture']) || empty($data['city_town'])) {

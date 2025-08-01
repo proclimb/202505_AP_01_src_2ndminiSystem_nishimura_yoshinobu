@@ -19,20 +19,76 @@
  * ** 4.html を描画
  */
 
-//  1.DB接続情報、クラス定義の読み込み
+//1.DB接続情報、クラス定義の読み込み
 require_once 'Db.php';
 require_once 'User.php';
+require_once 'Validator.php';
+
+session_cache_limiter('none');
+session_start();
+
+$_SESSION['source'] = 'edit';
+
+// 2.変数の初期化
+// *$_POSTの値があるときは初期化しない
+$error_message = [];
+$old = $_POST ?? $originalData;
+$inputs = $old;
 
 // 2.ダッシュボードから送信した変数を設定
+// $id = $_GET['id'];
 $id = $_GET['id'];
 
 // 3-1.Userクラスをインスタンス化
 $user = new User($pdo);
 
 // 3-2.UserクラスのfindById()メソッドで1件検索
-$_POST = $user->findById($id);
+// $_POST = $user->findById($id);
+// echo ($id);
+$originalData = $user->findById($id);
 
+// echo "入力チェック直前";
+// echo "バリデーション";
+// echo "session内容";
+// var_dump($_SESSION['input_data']);
+// echo "POSTの内容";
+// var_dump($_POST);
+// 3.入力項目の入力チェック
+if (!empty($_POST) && empty($_SESSION['input_data'])) {
+    // echo "バリデーション";
+    // echo "session内容";
+    // var_dump($_SESSION['input_data']);
+    // echo "POSTの内容";
+    // var_dump($_POST);
+    $data['source'] = $_SESSION['source'] ?? '';
+    $validator = new Validator();
+    var_dump($data['source']);
+    if ($validator->validate($_POST)) {
+        // echo "バリデーション成功";
+        $_SESSION['input_data'] = $_POST;
+        // header('Location:update.php');
+        // exit();
+    } else {
+        // echo "バリデーション失敗";
+        $error_message = $validator->getErrors();
+        // var_dump($error_message);
+        $_SESSION['errors'] = $validator->getErrors();  // ★これが必要
+        $_SESSION['inputs'] = $_POST;                   // ★これも必要
+        // header('Location:edit.php');                    // ★画面を戻す
+        // header('Location:edit.php?id=' . urlencode($id));
+        // exit();
+    }
+}
+//7/31追加
+
+// バリデーション失敗時の入力データとエラー取得
+$errors = $_SESSION['errors'] ?? [];
+$inputs = $_SESSION['inputs'] ?? $originalData;
+
+// 一度使ったらクリア
+unset($_SESSION['errors'], $_SESSION['inputs']);
 // 4.html の描画
+
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -42,8 +98,9 @@ $_POST = $user->findById($id);
     <title>mini System</title>
     <link rel="stylesheet" href="style_new.css">
     <script src="postalcodesearch.js"></script>
-    <script src="contact.js"></script>
+    <!-- <script src="contact.js"></script> -->
 </head>
+<!-- <?php var_dump($inputs); ?> -->
 
 <body>
     <div>
@@ -53,146 +110,124 @@ $_POST = $user->findById($id);
         <h2>更新・削除画面</h2>
     </div>
     <div>
-        <form action="update.php" method="post" name="edit" enctype="multipart/form-data">
-            <input type="hidden" name="id" value="<?php echo $_POST['id'] ?>">
+        <form action="edit.php?id=<?= htmlspecialchars($id) ?>" method="post" name="edit" enctype="multipart/form-data">
+            <!-- <?php if (!empty($errors)) : ?>
+                <div class="error-box" style="color: red; margin-bottom: 1em;">
+                    <ul>
+                        <?php foreach ($errors as $field => $message) : ?>
+                            <li><?= htmlspecialchars($message) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?> -->
+
+            <input type="hidden" name="id" value="<?= htmlspecialchars($inputs['id'] ?? $originalData['id'] ?? '') ?>">
+
             <h1 class="contact-title">更新内容入力</h1>
             <p>更新内容をご入力の上、「更新」ボタンをクリックしてください。</p>
             <p>削除する場合は「削除」ボタンをクリックしてください。</p>
-            <div>
-                <div>
-                    <label>お名前<span>必須</span></label>
-                    <input
-                        type="text"
-                        name="name"
-                        placeholder="例）山田太郎"
-                        value="<?= htmlspecialchars($_POST['name']) ?>">
-                </div>
-                <div>
-                    <label>ふりがな<span>必須</span></label>
-                    <input
-                        type="text"
-                        name="kana"
-                        placeholder="例）やまだたろう"
-                        value="<?= htmlspecialchars($_POST['kana']) ?>">
-                </div>
-                <div>
-                    <label>性別<span>必須</span></label>
-                    <?php $_POST['gender_flag'] ?? '1'; ?>
-                    <label class="gender">
-                        <input
-                            type="radio"
-                            name="gender_flag"
-                            value='1'
-                            <?= ($_POST['gender_flag'] ?? '1') == '1'
-                                ? 'checked' : '' ?>>男性</label>
-                    <label class="gender">
-                        <input
-                            type="radio"
-                            name="gender_flag"
-                            value='2'
-                            <?= ($_POST['gender_flag'] ?? '') == '2'
-                                ? 'checked' : '' ?>>女性</label>
-                    <label class="gender">
-                        <input
-                            type="radio"
-                            name="gender_flag"
-                            value='3'
-                            <?= ($_POST['gender_flag'] ?? '') == '3'
-                                ? 'checked' : '' ?>>その他</label>
-                </div>
-                <div>
-                    <label>生年月日<span>必須</span></label>
-                    <input
-                        type="text"
-                        name="birth_date"
-                        value="<?php echo $_POST['birth_date'] ?>"
-                        readonly
-                        class="readonly-field">
-                </div>
-                <div>
-                    <label>郵便番号<span>必須</span></label>
-                    <div class="postal-row">
-                        <input
-                            class="half-width"
-                            type="text"
-                            name="postal_code"
-                            id="postal_code"
-                            placeholder="例）100-0001"
-                            value="<?= htmlspecialchars($_POST['postal_code'] ?? '') ?>">
-                        <button type="button"
-                            class="postal-code-search"
-                            id="searchAddressBtn">住所検索</button>
-                    </div>
-                </div>
-                <div>
-                    <label>住所<span>必須</span></label>
-                    <input
-                        type="text"
-                        name="prefecture"
-                        id="prefecture"
-                        placeholder="都道府県"
-                        value="<?= htmlspecialchars($_POST['prefecture'] ?? '') ?>">
-                    <input
-                        type="text"
-                        name="city_town"
-                        id="city_town"
-                        placeholder="市区町村・番地"
-                        value="<?= htmlspecialchars($_POST['city_town'] ?? '') ?>">
-                    <input
-                        type="text"
-                        name="building"
-                        placeholder="建物名・部屋番号  **省略可**"
-                        value="<?= htmlspecialchars($_POST['building'] ?? '') ?>">
-                </div>
-                <div>
-                    <label>電話番号<span>必須</span></label>
-                    <input
-                        type="text"
-                        name="tel"
-                        placeholder="例）000-000-0000"
-                        value="<?= htmlspecialchars($_POST['tel']) ?>">
-                </div>
-                <div>
-                    <label>メールアドレス<span>必須</span></label>
-                    <input
-                        type="text"
-                        name="email"
-                        placeholder="例）guest@example.com"
-                        value="<?= htmlspecialchars($_POST['email']) ?>">
-                </div>
-                <div>
-                    <label>本人確認書類（表）</label>
-                    <input
-                        type="file"
-                        name="document1"
-                        id="document1"
-                        accept="image/png, image/jpeg, image/jpg">
-                    <span id="filename1" class="filename-display"></span>
-                    <div class="preview-container">
-                        <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px; margin-top: 8px;">
-                    </div>
-                </div>
 
-                <div>
-                    <label>本人確認書類（裏）</label>
-                    <input
-                        type="file"
-                        name="document2"
-                        id="document2"
-                        accept="image/png, image/jpeg, image/jpg">
-                    <span id="filename2" class="filename-display"></span>
-                    <div class="preview-container">
-                        <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
-                    </div>
+            <div>
+                <label>お名前<span>必須</span></label>
+                <input type="text" name="name" placeholder="例）山田太郎" value="<?= htmlspecialchars($inputs['name']) ?>">
+                <?php if (isset($errors['name'])) : ?>
+                    <div class="error-msg"><?= htmlspecialchars($errors['name']) ?></div>
+                <?php endif ?>
+            </div>
+
+            <div>
+                <label>ふりがな<span>必須</span></label>
+                <input type="text" name="kana" placeholder="例）やまだたろう" value="<?= htmlspecialchars($inputs['kana']) ?>">
+                <?php if (isset($errors['kana'])) : ?>
+                    <div class="error-msg"><?= htmlspecialchars($errors['kana']) ?></div>
+                <?php endif ?>
+            </div>
+
+            <div>
+                <label>性別<span>必須</span></label>
+                <label class="gender">
+                    <input type="radio" name="gender_flag" value='1' <?= ($inputs['gender_flag'] ?? '1') == '1' ? 'checked' : '' ?>>男性
+                </label>
+                <label class="gender">
+                    <input type="radio" name="gender_flag" value='2' <?= ($inputs['gender_flag'] ?? '') == '2' ? 'checked' : '' ?>>女性
+                </label>
+                <label class="gender">
+                    <input type="radio" name="gender_flag" value='3' <?= ($inputs['gender_flag'] ?? '') == '3' ? 'checked' : '' ?>>その他
+                </label>
+            </div>
+
+            <div>
+                <label>生年月日<span>必須</span></label>
+                <input type="text" name="birth_date" value="<?= htmlspecialchars($inputs['birth_date']) ?>" readonly class="readonly-field">
+                <?php if (isset($errors['birth_date'])) : ?>
+                    <div class="error-msg2"><?= htmlspecialchars($errors['birth_date']) ?></div>
+                <?php endif ?>
+            </div>
+
+            <div>
+                <label>郵便番号<span>必須</span></label>
+                <div class="postal-row">
+                    <input class="half-width" type="text" name="postal_code" id="postal_code" placeholder="例）100-0001" value="<?= htmlspecialchars($inputs['postal_code'] ?? '') ?>">
+                    <button type="button" class="postal-code-search" id="searchAddressBtn">住所検索</button>
+                </div>
+                <?php if (isset($errors['postal_code'])) : ?>
+                    <div class="error-msg2"><?= htmlspecialchars($errors['postal_code']) ?></div>
+                <?php endif ?>
+            </div>
+
+            <div>
+                <label>住所<span>必須</span></label>
+                <input type="text" name="prefecture" id="prefecture" placeholder="都道府県" value="<?= htmlspecialchars($inputs['prefecture'] ?? '') ?>">
+                <input type="text" name="city_town" id="city_town" placeholder="市区町村・番地" value="<?= htmlspecialchars($inputs['city_town'] ?? '') ?>">
+                <input type="text" name="building" placeholder="建物名・部屋番号  **省略可**" value="<?= htmlspecialchars($inputs['building'] ?? '') ?>">
+                <?php if (isset($errors['address'])) : ?>
+                    <div class="error-msg"><?= htmlspecialchars($errors['address']) ?></div>
+                <?php endif ?>
+            </div>
+
+            <div>
+                <label>電話番号<span>必須</span></label>
+                <input type="text" name="tel" placeholder="例）000-000-0000" value="<?= htmlspecialchars($inputs['tel']) ?>">
+                <?php if (isset($errors['tel'])) : ?>
+                    <div class="error-msg"><?= htmlspecialchars($errors['tel']) ?></div>
+                <?php endif ?>
+            </div>
+
+            <div>
+                <label>メールアドレス<span>必須</span></label>
+                <input type="text" name="email" placeholder="例）guest@example.com" value="<?= htmlspecialchars($inputs['email']) ?>">
+                <?php if (isset($errors['email'])) : ?>
+                    <div class="error-msg"><?= htmlspecialchars($errors['email']) ?></div>
+                <?php endif ?>
+            </div>
+
+            <div>
+                <label>本人確認書類（表）</label>
+                <input type="file" name="document1" id="document1" accept="image/png, image/jpeg, image/jpg">
+                <span id="filename1" class="filename-display"></span>
+                <div class="preview-container">
+                    <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px; margin-top: 8px;">
                 </div>
             </div>
-            <button type="button" onclick="validate()">更新</button>
+
+            <div>
+                <label>本人確認書類（裏）</label>
+                <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
+                <span id="filename2" class="filename-display"></span>
+                <div class="preview-container">
+                    <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
+                </div>
+            </div>
+
+            <button type="submit">更新</button>
             <input type="button" value="ダッシュボードに戻る" onclick="history.back(-1)">
         </form>
+
         <form action="delete.php" method="post" name="delete">
-            <input type="hidden" name="id" value="<?php echo $_POST['id'] ?>">
+            <input type="hidden" name="id" value="<?= htmlspecialchars($inputs['id'] ?? $originalData['id'] ?? '') ?>">
             <button type="submit">削除</button>
         </form>
+
     </div>
 </body>
 

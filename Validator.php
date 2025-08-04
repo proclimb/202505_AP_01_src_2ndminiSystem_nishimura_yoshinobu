@@ -1,13 +1,27 @@
 <?php
 
+session_start(); // ★ここを追加！
+
+
 class Validator
 {
+
+    private $pdo;
+
+    //DB接続情報
+    public function __construct($pdo)
+    {
+        $this->pdo = $pdo;
+    }
+
     private $error_message = [];
 
     // 呼び出し元で使う
     public function validate($data)
     {
         $this->error_message = [];
+
+        $source = $_SESSION['source'] ?? '';
 
         // 名前
         if (empty($data['name'])) {
@@ -24,35 +38,37 @@ class Validator
         } elseif (mb_strlen($data['kana']) > 20) {
             $this->error_message['kana'] = 'ふりがなは20文字以内で入力してください';
         }
-
-
-        // 生年月日
-        if (empty($data['birth_year']) || empty($data['birth_month']) || empty($data['birth_day'])) {
-            $this->error_message['birth_date'] = '生年月日が入力されていません';
-        } elseif (!$this->isValidDate($data['birth_year'] ?? '', $data['birth_month'] ?? '', $data['birth_day'] ?? '')) {
-            $this->error_message['birth_date'] = '生年月日が正しくありません';
-        } else {
-            // 1. 日付文字列を作る（YYYY-MM-DD）
-            $birth_date_str = sprintf(
-                '%04d-%02d-%02d',
-                $data['birth_year'],
-                $data['birth_month'],
-                $data['birth_day']
-            );
-
-            // 2. DateTimeオブジェクトに変換
-            $birth_date = DateTime::createFromFormat('Y-m-d', $birth_date_str);
-
-            // 3. 今日の日付
-            $today = new DateTime('today');
-
-            // 4. 未来日かチェック
-            if ($birth_date >= $today) {
-                //echo "未来日です。生年月日として正しくありません。";
-                $this->error_message['birth_date'] = '生年月日が未来日です';
+        // echo "validator.php";
+        // var_dump($source);
+        if ($source == "") {
+            // 生年月日
+            if (empty($data['birth_year']) || empty($data['birth_month']) || empty($data['birth_day'])) {
+                $this->error_message['birth_date'] = '生年月日が入力されていません';
+            } elseif (!$this->isValidDate($data['birth_year'] ?? '', $data['birth_month'] ?? '', $data['birth_day'] ?? '')) {
+                $this->error_message['birth_date'] = '生年月日が正しくありません';
             } else {
-                //echo "問題なし。過去日か今日の日付です。";
-                // $this->error_message['birth_date'] = '問題なし。過去日か今日の日付です。';
+                // 1. 日付文字列を作る（YYYY-MM-DD）
+                $birth_date_str = sprintf(
+                    '%04d-%02d-%02d',
+                    $data['birth_year'],
+                    $data['birth_month'],
+                    $data['birth_day']
+                );
+
+                // 2. DateTimeオブジェクトに変換
+                $birth_date = DateTime::createFromFormat('Y-m-d', $birth_date_str);
+
+                // 3. 今日の日付
+                $today = new DateTime('today');
+
+                // 4. 未来日かチェック
+                if ($birth_date >= $today) {
+                    //echo "未来日です。生年月日として正しくありません。";
+                    $this->error_message['birth_date'] = '生年月日が未来日です';
+                } else {
+                    //echo "問題なし。過去日か今日の日付です。";
+                    // $this->error_message['birth_date'] = '問題なし。過去日か今日の日付です。';
+                }
             }
         }
 
@@ -142,7 +158,7 @@ class Validator
             // var_dump($prefecture);
             // var_dump(isValidPrefecture($prefecture));
             // echo "「{$prefecture}」は有効な都道府県です。";
-            $this->error_message['prefecture'] = "有効な都道府県ではありません";
+            // $this->error_message['prefecture'] = "有効な都道府県ではありません";
         } else {
             // echo "「{$prefecture}」は無効な都道府県です。";
             $this->error_message['address'] = "有効な都道府県ではありません";

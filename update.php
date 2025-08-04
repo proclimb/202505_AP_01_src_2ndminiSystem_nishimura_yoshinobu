@@ -17,15 +17,35 @@
 
 session_start();
 
+$data = $_SESSION['input_data'] ?? null;
+$files = $_SESSION['files'] ?? null;
+
+if ($data === null) {
+    header('Location: edit.php');
+    exit;
+}
+
 //  1.DB接続情報、クラス定義の読み込み
 require_once 'Db.php';
 require_once 'User.php';
 require_once 'Address.php';
 require_once 'FileBlobHelper.php';
+require_once 'Validator.php';
+
+// ------------------------
+// 入力値のバリデーション
+// ------------------------
+// $validator = new Validator($pdo);
+// if (!$validator->validate($_POST)) {
+//     $_SESSION['errors'] = $validator->getErrors();
+//     $_SESSION['old'] = $_POST;
+//     header('Location: edit.php?id=' . $_POST['id']);
+//     exit;
+// }
 
 // 2. 入力データ取得
 // 2-1. ユーザーデータ取得
-$id = $_POST['id'];
+$id = $data['id'];
 $userData = [
     'name'         => $_POST['name'],
     'kana'         => $_POST['kana'],
@@ -119,5 +139,10 @@ try {
         </div>
     </div>
 </body>
+
+
+<?php
+unset($_SESSION['input_data'], $_SESSION['files']);
+?>
 
 </html>

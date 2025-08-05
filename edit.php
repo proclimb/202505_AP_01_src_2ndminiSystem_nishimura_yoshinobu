@@ -46,42 +46,9 @@ $user = new User($pdo);
 // $_POST = $user->findById($id);
 // echo ($id);
 $originalData = $user->findById($id);
-
-// echo "入力チェック直前";
-// echo "バリデーション";
-// echo "session内容";
-// var_dump($_SESSION['input_data']);
-// echo "POSTの内容";
-// var_dump($_POST);
-// // 3.入力項目の入力チェック
-// if (!empty($_POST) && empty($_SESSION['input_data'])) {
-//     echo "バリデーション";
-//     echo "session内容";
-//     var_dump($_SESSION['input_data']);
-//     echo "POSTの内容";
-//     var_dump($_POST);
-//     $data['source'] = $_SESSION['source'] ?? '';
-//     $validator = new Validator();
-//     // var_dump($data['source']);
-//     if ($validator->validate($_POST)) {
-//         echo "バリデーション成功";
-//         $_SESSION['input_data'] = $_POST;
-//         header('Location:update.php');   //バグが治ったら、コメントアウト
-//         exit();                          //バグが治ったら、コメントアウト
-//     } else {
-//         echo "バリデーション失敗";
-//         $error_message = $validator->getErrors();
-//         // var_dump($error_message);
-//         $_SESSION['errors'] = $validator->getErrors();  // ★これが必要
-//         $_SESSION['inputs'] = $_POST;                   // ★これも必要
-//         // header('Location:edit.php');                    // ★画面を戻す
-//         header('Location:edit.php?id=' . urlencode($id));    //バグが治ったら、コメントアウト
-//         exit();                                              //バグが治ったら、コメントアウト
-//     }
-// }
 // バリデーション処理
 if (!empty($_POST)) {
-    $data = array($_POST, $_FILES);
+    $data = array_merge($_POST, $_FILES);
     $data['source'] = $_SESSION['source'] ?? '';
 
     $validator = new Validator($pdo);
@@ -95,10 +62,14 @@ if (!empty($_POST)) {
 
         $_SESSION['input_data'] = $_POST;
         $_SESSION['files'] = $_FILES;
-        header('Location: update.php');
+
+        // echo "update.php直前";
+
+        // header('Location: update.php');
+        include 'update.php';
         exit();
     } else {
-        echo "バリデーション失敗";
+        // echo "バリデーション失敗";
 
         $_SESSION['errors'] = $validator->getErrors();
         $_SESSION['inputs'] = $data;
@@ -230,6 +201,9 @@ $inputs = $_SESSION['inputs'] ?? $originalData;
                 <div>
                     <label>本人確認書類（表）</label>
                     <input type="file" name="document1" id="document1" accept="image/png, image/jpeg, image/jpg">
+                    <?php if (isset($errors['document1'])) : ?>
+                        <div class="error-msg"><?= htmlspecialchars($errors['document1']) ?>（もう一度選択してください）</div>
+                    <?php endif ?>
                     <span id="filename1" class="filename-display"></span>
                     <div class="preview-container">
                         <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px; margin-top: 8px;">
@@ -239,6 +213,10 @@ $inputs = $_SESSION['inputs'] ?? $originalData;
                 <div>
                     <label>本人確認書類（裏）</label>
                     <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
+                    <?php if (isset($errors['document2'])) : ?>
+                        <div class="error-msg"><?= htmlspecialchars($errors['document2']) ?></div>
+                    <?php endif ?>
+
                     <span id="filename2" class="filename-display"></span>
                     <div class="preview-container">
                         <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
@@ -256,6 +234,7 @@ $inputs = $_SESSION['inputs'] ?? $originalData;
 
     </div>
 </body>
+
 
 <?php
 unset($_SESSION['errors'], $_SESSION['inputs']);

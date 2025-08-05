@@ -38,8 +38,9 @@ class Validator
         } elseif (mb_strlen($data['kana']) > 20) {
             $this->error_message['kana'] = 'ふりがなは20文字以内で入力してください';
         }
-        // echo "validator.php";
-        // var_dump($source);
+        // edit.php、input.phpのどのプログラムから呼び出されているか判定
+        //$source == ""の時、input.phpから
+        //$source == "edit"の時、edit.phpから
         if ($source == "") {
             // 生年月日
             if (empty($data['birth_year']) || empty($data['birth_month']) || empty($data['birth_day'])) {
@@ -183,6 +184,25 @@ class Validator
         } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $this->error_message['email'] = '有効なメールアドレスを入力してください';
         }
+
+        // ファイルのMIMEタイプをチェックする処理
+        if (isset($data['document1']) && is_array($data['document1']) && $data['document1']['error'] === UPLOAD_ERR_OK) {
+            $mime1 = mime_content_type($data['document1']['tmp_name']);
+            if ($mime1 !== 'image/png' && $mime1 !== 'image/jpeg') {
+                $this->error_message['document1'] = '本人確認書類（表）は PNG または JPEG 形式のみ対応しています。';
+                echo "document1";
+                // var_dump(error_message['document1']);
+            }
+        }
+
+        if (isset($data['document2']) && is_array($data['document2']) && $data['document2']['error'] === UPLOAD_ERR_OK) {
+            $mime2 = mime_content_type($data['document2']['tmp_name']);
+            if ($mime2 !== 'image/png' && $mime2 !== 'image/jpeg') {
+                $this->error_message['document2'] = '本人確認書類（裏）は PNG または JPEG 形式のみ対応しています。';
+                echo "document2";
+            }
+        }
+
 
         return empty($this->error_message);
     }

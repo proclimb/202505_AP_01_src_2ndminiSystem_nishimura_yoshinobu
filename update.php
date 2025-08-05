@@ -20,6 +20,8 @@ session_start();
 $data = $_SESSION['input_data'] ?? null;
 $files = $_SESSION['files'] ?? null;
 
+// echo "editから遷移";
+
 if ($data === null) {
     header('Location: edit.php');
     exit;
@@ -47,21 +49,21 @@ require_once 'Validator.php';
 // 2-1. ユーザーデータ取得
 $id = $data['id'];
 $userData = [
-    'name'         => $_POST['name'],
-    'kana'         => $_POST['kana'],
-    'gender_flag'  => $_POST['gender_flag'],
-    'tel'          => $_POST['tel'],
-    'email'        => $_POST['email'],
+    'name'         => $data['name'],
+    'kana'         => $data['kana'],
+    'gender_flag'  => $data['gender_flag'],
+    'tel'          => $data['tel'],
+    'email'        => $data['email'],
 ];
 
 
 // 2-2. 住所データも取得
 $addressData = [
     'user_id'      => $id,
-    'postal_code'  => $_POST['postal_code'],
-    'prefecture'   => $_POST['prefecture'],
-    'city_town'    => $_POST['city_town'],
-    'building'     => $_POST['building'],
+    'postal_code'  => $data['postal_code'],
+    'prefecture'   => $data['prefecture'],
+    'city_town'    => $data['city_town'],
+    'building'     => $data['building'],
 ];
 
 // 3. トランザクション開始
@@ -80,10 +82,14 @@ try {
     // 6. ファイルアップロードを BLOB 化して取得（保存期限なし = null）
     //    edit.php の <input type="file" name="document1"> / document2
     $blobs = FileBlobHelper::getMultipleBlobs(
-        $_FILES['document1'] ?? null,
-        $_FILES['document2'] ?? null
-    );
+        // $_FILES['document1'] ?? null,
+        // $_FILES['document2'] ?? null
 
+        $files['document1'] ?? null,  // ← $_FILES → $files に変更
+        $files['document2'] ?? null
+    );
+    var_dump($files);
+    // var_dump($blobs);
     // 7. BLOB が null でなければ（いずれかアップロードされたなら）user_documents に登録
     if ($blobs !== null) {
         // expires_at を NULL にして「保存期限なし」を実現

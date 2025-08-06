@@ -31,6 +31,7 @@
  */
 
 //  1.DB接続情報、クラス定義の読み込み
+require_once 'Db.php';
 require_once 'Validator.php';
 
 // 1.セッションの開始
@@ -44,7 +45,7 @@ $old = $_POST ?? [];
 
 // 3.入力項目の入力チェック
 if (!empty($_POST) && empty($_SESSION['input_data'])) {
-    $validator = new Validator();
+    $validator = new Validator($pdo);
 
     if ($validator->validate($_POST)) {
         $_SESSION['input_data'] = $_POST;

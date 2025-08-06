@@ -73,6 +73,12 @@ if (!empty($_POST)) {
 
         $_SESSION['errors'] = $validator->getErrors();
         $_SESSION['inputs'] = $data;
+
+        $_SESSION['file_names'] = [
+            'document1' => $_FILES['document1']['name'] ?? '',
+            'document2' => $_FILES['document2']['name'] ?? '',
+        ];
+
         header('Location: edit.php?id=' . urlencode($id));
         exit();
     }
@@ -80,6 +86,9 @@ if (!empty($_POST)) {
 // バリデーション失敗時の入力データとエラー取得
 $errors = $_SESSION['errors'] ?? [];
 $inputs = $_SESSION['inputs'] ?? $originalData;
+$file_names = $_SESSION['file_names'] ?? [];
+// ファイル名だけ保存
+
 
 // 一度使ったらクリア
 // unset($_SESSION['errors'], $_SESSION['inputs']);
@@ -202,9 +211,12 @@ $inputs = $_SESSION['inputs'] ?? $originalData;
                     <label>本人確認書類（表）</label>
                     <input type="file" name="document1" id="document1" accept="image/png, image/jpeg, image/jpg">
                     <?php if (isset($errors['document1'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['document1']) ?>（もう一度選択してください）</div>
+                        <div class="error-msg"><?= htmlspecialchars($errors['document1']) ?></div>
                     <?php endif ?>
-                    <span id="filename1" class="filename-display"></span>
+
+                    <!-- <span id="filename1" class="filename-display">
+                        <?= htmlspecialchars($file_names['document1'] ?? '') ?>
+                    </span> -->
                     <div class="preview-container">
                         <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px; margin-top: 8px;">
                     </div>
@@ -214,10 +226,12 @@ $inputs = $_SESSION['inputs'] ?? $originalData;
                     <label>本人確認書類（裏）</label>
                     <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
                     <?php if (isset($errors['document2'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['document2']) ?></div>
+                        <div class="error-msg"><?= htmlspecialchars($errors['document2']) ?>（もう一度選択してください）</div>
                     <?php endif ?>
 
-                    <span id="filename2" class="filename-display"></span>
+                    <!-- <span id="filename2" class="filename-display">
+                        <?= htmlspecialchars($file_names['document2'] ?? '') ?>
+                    </span> -->
                     <div class="preview-container">
                         <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
                     </div>
@@ -237,7 +251,8 @@ $inputs = $_SESSION['inputs'] ?? $originalData;
 
 
 <?php
-unset($_SESSION['errors'], $_SESSION['inputs']);
+// unset($_SESSION['errors'], $_SESSION['inputs']);
+unset($_SESSION['errors'], $_SESSION['inputs'], $_SESSION['file_names']);
 ?>
 
 </html>

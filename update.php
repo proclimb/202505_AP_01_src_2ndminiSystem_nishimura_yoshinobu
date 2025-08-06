@@ -88,7 +88,7 @@ try {
         $files['document1'] ?? null,  // ← $_FILES → $files に変更
         $files['document2'] ?? null
     );
-    var_dump($files);
+    // var_dump($files);
     // var_dump($blobs);
     // 7. BLOB が null でなければ（いずれかアップロードされたなら）user_documents に登録
     if ($blobs !== null) {

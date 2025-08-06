@@ -13,9 +13,9 @@
  */
 // 1.DB接続設定
 $host = 'localhost';
-$dbname = '****';
-$user = '****';
-$password = '****';
+$dbname = 'minisystem_relation';
+$user = 'root';
+$password = 'proclimb';
 $charset = 'utf8mb4';
 
 // 2.DSN（データべース名）
@@ -34,3 +34,26 @@ try {
     // エラー時にエラーメッセージを出力
     die("DB接続に失敗しました: " . $e->getMessage());
 }
+
+
+// function getPdo()
+// {
+//     $host = 'localhost';
+//     $dbname = 'minisystem_relation';
+//     $user = 'root';
+//     $password = 'proclimb';
+//     $charset = 'utf8mb4';
+
+//     $dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";
+
+//     $options = [
+//         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+//         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+//     ];
+
+//     try {
+//         return new PDO($dsn, $user, $password, $options);
+//     } catch (PDOException $e) {
+//         die("DB接続に失敗しました: " . $e->getMessage());
+//     }
+// }

@@ -139,7 +139,7 @@ class Validator
         if (isset($data['document1']) && is_array($data['document1']) && $data['document1']['error'] === UPLOAD_ERR_OK) {
             $mime1 = mime_content_type($data['document1']['tmp_name']);
             if ($mime1 !== 'image/png' && $mime1 !== 'image/jpeg') {
-                $this->error_message['document1'] = '本人確認書類（表）は PNG または JPEG 形式のみ対応しています。';
+                $this->error_message['document1'] = 'ファイル形式は PNG または JPEG のみ許可されています';
                 echo "document1";
                 // var_dump(error_message['document1']);
             }
@@ -148,7 +148,7 @@ class Validator
         if (isset($data['document2']) && is_array($data['document2']) && $data['document2']['error'] === UPLOAD_ERR_OK) {
             $mime2 = mime_content_type($data['document2']['tmp_name']);
             if ($mime2 !== 'image/png' && $mime2 !== 'image/jpeg') {
-                $this->error_message['document2'] = '本人確認書類（裏）は PNG または JPEG 形式のみ対応しています。';
+                $this->error_message['document2'] = 'ファイル形式は PNG または JPEG のみ許可されています';
                 echo "document2";
             }
         }

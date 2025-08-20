@@ -226,7 +226,7 @@ $file_names = $_SESSION['file_names'] ?? [];
                     <label>本人確認書類（裏）</label>
                     <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
                     <?php if (isset($errors['document2'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['document2']) ?>（もう一度選択してください）</div>
+                        <div class="error-msg"><?= htmlspecialchars($errors['document2']) ?></div>
                     <?php endif ?>
 
                     <!-- <span id="filename2" class="filename-display">

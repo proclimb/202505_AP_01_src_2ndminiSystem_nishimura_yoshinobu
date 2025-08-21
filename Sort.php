@@ -9,7 +9,7 @@
 /**
  * 1. GET パラメータからソートキー・ソート順を取得・バリデーション
  */
-$allowedSortKeys = ['kana', 'postal_code', 'email'];
+$allowedSortKeys = ['name', 'kana', 'postal_code', 'email'];
 
 // sort_by の正当性チェック
 if (isset($_GET['sort_by']) && in_array($_GET['sort_by'], $allowedSortKeys, true)) {
@@ -17,7 +17,7 @@ if (isset($_GET['sort_by']) && in_array($_GET['sort_by'], $allowedSortKeys, true
 } else {
     $sortBy = null;
 }
-
+// var_dump($sortBy);
 // sort_order の正当性チェック
 if (isset($_GET['sort_order']) && in_array(strtolower($_GET['sort_order']), ['asc', 'desc'], true)) {
     $sortOrd = strtolower($_GET['sort_order']);
@@ -38,7 +38,7 @@ if (isset($_GET['sort_order']) && in_array(strtolower($_GET['sort_order']), ['as
 function sortLink(string $column, string $label, ?string $currentSortBy, ?string $currentSortOrd, string $nameKeyword): string
 {
     // 今のソートキーと同じなら矢印を表示
-    $arrow = '';
+    $arrow = '▲▼';
     if ($currentSortBy === $column) {
         $arrow = ($currentSortOrd === 'asc') ? ' ▲' : ' ▼';
     }

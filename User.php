@@ -271,12 +271,21 @@ class User
 
         // (2) ソート 条件追加
         //    allowed: kana, postal_code, email
-        $allowedSort = ['kana', 'postal_code', 'email'];
+        $allowedSort = ['name', 'kana', 'postal_code', 'email'];
         if ($sortBy !== null && in_array($sortBy, $allowedSort, true)) {
             // ふりがなの場合、テーブル側では u.kana カラム
             // postal_code, email は a.postal_code / u.email
             $column = '';
-            if ($sortBy === 'kana') {
+            // if ($sortBy === 'kana') {
+            //     $column = 'u.kana';
+            // } elseif ($sortBy === 'postal_code') {
+            //     $column = 'a.postal_code';
+            // } elseif ($sortBy === 'email') {
+            //     $column = 'u.email';
+            // }
+            if ($sortBy === 'name') {
+                $column = 'u.name';
+            } elseif ($sortBy === 'kana') {
                 $column = 'u.kana';
             } elseif ($sortBy === 'postal_code') {
                 $column = 'a.postal_code';

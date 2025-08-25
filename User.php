@@ -166,7 +166,7 @@ class User
      * @param string|null $keyword  名前の部分一致キーワード（空文字 or null は検索なし＝全件）
      * @return int                  マッチしたレコード数
      */
-    public function countUsersWithKeyword(?string $keyword): int
+    public function countUsersWithKeyword(?string $keyword, string $column = 'name'): int
     {
         $sql = "SELECT COUNT(*) AS cnt
                   FROM user_base u
@@ -192,8 +192,21 @@ class User
                  WHERE u.del_flag = 0
         ";
         $params = [];
+        // if ($keyword !== null && trim($keyword) !== '') {
+        //     $sql .= " AND u.name LIKE :keyword ";
+        //     $params[':keyword'] = '%' . trim($keyword) . '%';
+        // }
+        $allowedColumns = ['name', 'kana', 'address'];
+        if (!in_array($column, $allowedColumns, true)) {
+            $column = 'name';
+        }
+        $params = [];
         if ($keyword !== null && trim($keyword) !== '') {
-            $sql .= " AND u.name LIKE :keyword ";
+            if ($column === 'address') {
+                $sql .= " AND (a.prefecture LIKE :keyword OR a.city_town LIKE :keyword OR a.building LIKE :keyword) ";
+            } else {
+                $sql .= " AND u.$column LIKE :keyword ";
+            }
             $params[':keyword'] = '%' . trim($keyword) . '%';
         }
 
@@ -222,7 +235,8 @@ class User
         ?string $sortBy,
         ?string $sortOrder,
         int $offset,
-        int $limit
+        int $limit,
+        string $column = 'name'
     ): array {
         // 基本の SELECT 文（search() と同様の JOIN 構造）
         $sql = "SELECT
@@ -264,8 +278,21 @@ class User
         $params = [];
 
         // (1) キーワード検索 条件追加
+        // if ($keyword !== null && trim($keyword) !== '') {
+        //     $sql .= " AND u.name LIKE :keyword ";
+        //     $params[':keyword'] = '%' . trim($keyword) . '%';
+        // }
+        $allowedColumns = ['name', 'kana', 'address'];
+        if (!in_array($column, $allowedColumns, true)) {
+            $column = 'name';
+        }
+        $params = [];
         if ($keyword !== null && trim($keyword) !== '') {
-            $sql .= " AND u.name LIKE :keyword ";
+            if ($column === 'address') {
+                $sql .= " AND (a.prefecture LIKE :keyword OR a.city_town LIKE :keyword OR a.building LIKE :keyword) ";
+            } else {
+                $sql .= " AND u.$column LIKE :keyword ";
+            }
             $params[':keyword'] = '%' . trim($keyword) . '%';
         }
 

@@ -688,6 +688,64 @@ input.readonly-field[type="text"] {
     color: #007ea8;
 }
 
+/* =========================
+   プルダウン（select）統一用スタイル
+   ========================= */
+.form-select {
+    width: 200px;
+    /* 幅を統一 */
+    padding: 5px 10px;
+    /* 内側の余白 */
+    font-size: 14px;
+    /* 文字サイズ */
+    height: 36px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    /* 角丸 */
+    background-color: #fff;
+    appearance: none;
+    /* OSデフォルトの矢印を無効化 */
+}
+
+/* 共通のフォームデザイン */
+.form-control {
+    padding: 6px 12px;
+    /* 内側の余白 */
+    font-size: 14px;
+    /* 文字サイズ */
+    border: 1px solid #ccc;
+    /* 枠線 */
+    border-radius: 4px;
+    /* 角丸 */
+    height: 36px;
+    /* 高さを揃える */
+    box-sizing: border-box;
+    /* 幅・高さにpaddingを含める */
+    vertical-align: middle;
+    margin-right: 5px;
+    /* 横並び間隔 */
+}
+
+/* ボタン専用 */
+.form-control.btn {
+    background-color: #007bff;
+    color: #fff;
+    border: 1px solid #007bff;
+    cursor: pointer;
+}
+
+.form-control.btn:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+/* 横並び用ラッパー */
+.name-search-form {
+    display: flex;
+    align-items: center;
+    /* 縦方向を中央揃え */
+}
+
 /* -------------------------------------------------------------------
    ↑ ここまで変更・追加箇所
    ------------------------------------------------------------------- */

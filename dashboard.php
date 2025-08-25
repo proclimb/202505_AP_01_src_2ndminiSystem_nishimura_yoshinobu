@@ -35,22 +35,27 @@ $page        = $page    ?? 1;     // page.php でセット済み
 
 // 検索フォームで「検索」ボタンが押された場合
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_submit'])) {
-    $nameKeyword = trim($_GET['search_name'] ?? '');
+    // $nameKeyword = trim($_GET['search_name'] ?? '');
+    $Keyword = trim($_GET['keyword'] ?? '');
+
     // 検索時は常に1ページ目、ソートもリセット
     $sortBy  = null;
     $sortOrd = 'asc';
     $page    = 1;
 } else {
     // 検索キーがある場合のみ受け取る
-    $nameKeyword = trim($_GET['search_name'] ?? '');
+    // $nameKeyword = trim($_GET['search_name'] ?? '');
+    $Keyword = trim($_GET['keyword'] ?? '');
     // ソートとページは sort.php / page.php により既にセット済み
 }
+
+$column = $_GET['column'] ?? 'name'; // デフォルトは name
 
 // ---------------------------------------------
 // 2. ページネーション用定数・総件数数取得
 // ---------------------------------------------
 $userModel  = new User($pdo);
-$totalCount = $userModel->countUsersWithKeyword($nameKeyword);
+$totalCount = $userModel->countUsersWithKeyword($Keyword, $column);
 
 // 1ページあたりの表示件数
 $limit = 10;
@@ -62,11 +67,12 @@ list($page, $offset, $totalPages) = getPaginationParams($totalCount, $limit);
 // 3. 実際のユーザー一覧を取得
 // ---------------------------------------------
 $users = $userModel->fetchUsersWithKeyword(
-    $nameKeyword,
+    $Keyword,
     $sortBy,
     $sortOrd,
     $offset,
-    $limit
+    $limit,
+    $column
 );
 
 // 3.html の描画
@@ -88,14 +94,30 @@ $users = $userModel->fetchUsersWithKeyword(
         <h2>ダッシュボード</h2>
     </div>
     <form method="get" action="dashboard.php" class="name-search-form" style="width:80%; margin: 20px auto;">
-        <label for="search_name">名前で検索：</label>
+
+        <!-- 検索ボタン -->
+        <input type="submit" name="search_submit" value="検索" class="form-control btn">
+
+        <!-- 検索ワード入力 -->
+        <input type="text" name="keyword" value="<?= htmlspecialchars($keyword, ENT_QUOTES) ?>" class="form-control" placeholder="検索ワードを入力">
+
+        <!-- 検索対象プルダウン -->
+        <select name="column" class="form-select">
+            <option value="name" <?= $column === 'name' ? 'selected' : '' ?>>名前</option>
+            <option value="kana" <?= $column === 'kana' ? 'selected' : '' ?>>ふりがな</option>
+            <option value="address" <?= $column === 'address' ? 'selected' : '' ?>>住所</option>
+        </select>
+
+
+
+        <!-- <label for="search_name">名前で検索：</label>
         <input
             type="text"
             name="search_name"
             id="search_name"
             value="<?= htmlspecialchars($nameKeyword, ENT_QUOTES) ?>"
             placeholder="名前の一部を入力">
-        <input type="submit" name="search_submit" value="検索">
+        <input type="submit" name="search_submit" value="検索"> -->
     </form>
 
     <!-- 5. 検索結果件数表示（テーブルの左上へ置きたいので、幅80%・中央寄せして左寄せテキスト） -->
@@ -109,23 +131,23 @@ $users = $userModel->fetchUsersWithKeyword(
             <th>編集</th>
             <!-- <th>名前</th> -->
             <th>
-                <?= sortLink('name', '名前', $sortBy, $sortOrd, $nameKeyword) ?>
+                <?= sortLink('name', '名前', $sortBy, $sortOrd, $Keyword) ?>
             </th>
             <!-- ① ふりがな ソートリンク -->
             <th>
-                <?= sortLink('kana', 'ふりがな', $sortBy, $sortOrd, $nameKeyword) ?>
+                <?= sortLink('kana', 'ふりがな', $sortBy, $sortOrd, $Keyword) ?>
             </th>
             <th>性別</th>
             <th>生年月日</th>
             <!-- ② 郵便番号 ソートリンク -->
             <th>
-                <?= sortLink('postal_code', '郵便番号', $sortBy, $sortOrd, $nameKeyword) ?>
+                <?= sortLink('postal_code', '郵便番号', $sortBy, $sortOrd, $Keyword) ?>
             </th>
             <th>住所</th>
             <th>電話番号</th>
             <!-- ③ メールアドレス ソートリンク -->
             <th>
-                <?= sortLink('email', 'メールアドレス', $sortBy, $sortOrd, $nameKeyword) ?>
+                <?= sortLink('email', 'メールアドレス', $sortBy, $sortOrd, $Keyword) ?>
             </th>
             <th>画像①</th>
             <th>画像②</th>
@@ -183,7 +205,7 @@ $users = $userModel->fetchUsersWithKeyword(
     </table>
 
     <!-- 7. ページネーション -->
-    <?= paginationLinks($page, $totalPages, $nameKeyword, $sortBy, $sortOrd) ?>
+    <?= paginationLinks($page, $totalPages, $Keyword, $sortBy, $sortOrd) ?>
 
     <!-- 8. 「TOPに戻る」ボタン -->
     <a href="index.php">

@@ -28,34 +28,55 @@ require_once 'Page.php';      // ページネーション関連の処理と pagi
 // ---------------------------------------------
 // 1. リクエストパラメータ取得・初期化
 // ---------------------------------------------
-$nameKeyword = '';
-$sortBy      = $sortBy  ?? null;  // sort.php でセット済み
-$sortOrd     = $sortOrd ?? 'asc'; // sort.php でセット済み
-$page        = $page    ?? 1;     // page.php でセット済み
+// $keyword = '';
+// $sortBy      = $sortBy  ?? null;  // sort.php でセット済み
+// $sortOrd     = $sortOrd ?? 'asc'; // sort.php でセット済み
+// $page        = $page    ?? 1;     // page.php でセット済み
 
-// 検索フォームで「検索」ボタンが押された場合
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_submit'])) {
-    // $nameKeyword = trim($_GET['search_name'] ?? '');
-    $Keyword = trim($_GET['keyword'] ?? '');
+// // 検索フォームで「検索」ボタンが押された場合
+// if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['search_submit'])) {
+//     // $nameKeyword = trim($_GET['search_name'] ?? '');
+//     $keyword = trim($_GET['keyword'] ?? '');
 
-    // 検索時は常に1ページ目、ソートもリセット
-    $sortBy  = null;
-    $sortOrd = 'asc';
-    $page    = 1;
-} else {
-    // 検索キーがある場合のみ受け取る
-    // $nameKeyword = trim($_GET['search_name'] ?? '');
-    $Keyword = trim($_GET['keyword'] ?? '');
-    // ソートとページは sort.php / page.php により既にセット済み
-}
+//     // 検索時は常に1ページ目、ソートもリセット
+//     $sortBy  = null;
+//     $sortOrd = 'asc';
+//     $page    = 1;
+// } else {
+//     // 検索キーがある場合のみ受け取る
+//     // $nameKeyword = trim($_GET['search_name'] ?? '');
+//     $keyword = trim($_GET['keyword'] ?? '');
+//     // ソートとページは sort.php / page.php により既にセット済み
+//     // ソートパラメータ
+//     $sortBy  = $_GET['sort_by'] ?? null;      // GETから取得
+//     $sortOrd = $_GET['sort_order'] ?? 'asc';  // GETから取得
 
+//     // ページ番号
+//     $page = (int)($_GET['page'] ?? 1);
+// }
+//
+$keyword = trim($_GET['keyword'] ?? '');
 $column = $_GET['column'] ?? 'name'; // デフォルトは name
+
+// ソートパラメータ
+$sortBy  = $_GET['sort_by'] ?? null;
+$sortOrd = $_GET['sort_order'] ?? 'asc';
+
+// ページ番号
+$page = (int)($_GET['page'] ?? 1);
+
+// 検索ボタンを押した場合はページを1にリセット
+if (isset($_GET['search_submit'])) {
+    $page = 1;
+}
+//
+
 
 // ---------------------------------------------
 // 2. ページネーション用定数・総件数数取得
 // ---------------------------------------------
 $userModel  = new User($pdo);
-$totalCount = $userModel->countUsersWithKeyword($Keyword, $column);
+$totalCount = $userModel->countUsersWithKeyword($keyword, $column);
 
 // 1ページあたりの表示件数
 $limit = 10;
@@ -67,7 +88,7 @@ list($page, $offset, $totalPages) = getPaginationParams($totalCount, $limit);
 // 3. 実際のユーザー一覧を取得
 // ---------------------------------------------
 $users = $userModel->fetchUsersWithKeyword(
-    $Keyword,
+    $keyword,
     $sortBy,
     $sortOrd,
     $offset,
@@ -131,23 +152,23 @@ $users = $userModel->fetchUsersWithKeyword(
             <th>編集</th>
             <!-- <th>名前</th> -->
             <th>
-                <?= sortLink('name', '名前', $sortBy, $sortOrd, $Keyword) ?>
+                <?= sortLink('name', '名前', $sortBy, $sortOrd, $keyword, $column) ?>
             </th>
             <!-- ① ふりがな ソートリンク -->
             <th>
-                <?= sortLink('kana', 'ふりがな', $sortBy, $sortOrd, $Keyword) ?>
+                <?= sortLink('kana', 'ふりがな', $sortBy, $sortOrd, $keyword, $column) ?>
             </th>
             <th>性別</th>
             <th>生年月日</th>
             <!-- ② 郵便番号 ソートリンク -->
             <th>
-                <?= sortLink('postal_code', '郵便番号', $sortBy, $sortOrd, $Keyword) ?>
+                <?= sortLink('postal_code', '郵便番号', $sortBy, $sortOrd, $keyword, $column) ?>
             </th>
             <th>住所</th>
             <th>電話番号</th>
             <!-- ③ メールアドレス ソートリンク -->
             <th>
-                <?= sortLink('email', 'メールアドレス', $sortBy, $sortOrd, $Keyword) ?>
+                <?= sortLink('email', 'メールアドレス', $sortBy, $sortOrd, $keyword, $column) ?>
             </th>
             <th>画像①</th>
             <th>画像②</th>
@@ -205,7 +226,7 @@ $users = $userModel->fetchUsersWithKeyword(
     </table>
 
     <!-- 7. ページネーション -->
-    <?= paginationLinks($page, $totalPages, $Keyword, $sortBy, $sortOrd) ?>
+    <?= paginationLinks($page, $totalPages, $keyword, $sortBy, $sortOrd, $column) ?>
 
     <!-- 8. 「TOPに戻る」ボタン -->
     <a href="index.php">

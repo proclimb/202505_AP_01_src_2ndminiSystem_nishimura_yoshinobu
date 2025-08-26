@@ -746,6 +746,59 @@ input.readonly-field[type="text"] {
     /* 縦方向を中央揃え */
 }
 
+/* ===== 削除確認モーダル ===== */
+.modal {
+    display: none;
+    /* 初期は非表示 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* 半透明の黒背景 */
+    justify-content: center;
+    /* 中央寄せ */
+    align-items: center;
+    z-index: 9999;
+    /* 最前面 */
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    width: 320px;
+    max-width: 90%;
+}
+
+/* ボタン共通スタイルは既存を維持 */
+.modal button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Tabキーのフォーカス時だけ枠を黒に */
+.modal button:focus {
+    outline: 3px solid #000;
+    /* 黒枠 */
+    outline-offset: 2px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+/* ボタン横並び */
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
 /* -------------------------------------------------------------------
    ↑ ここまで変更・追加箇所
    ------------------------------------------------------------------- */

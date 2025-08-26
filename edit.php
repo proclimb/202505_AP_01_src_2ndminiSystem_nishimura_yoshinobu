@@ -243,9 +243,77 @@ $file_names = $_SESSION['file_names'] ?? [];
 
         <form action="delete.php" method="post" name="delete">
             <input type="hidden" name="id" value="<?= htmlspecialchars($inputs['id'] ?? $originalData['id'] ?? '') ?>">
-            <button type="submit">削除</button>
+            <!-- <button type="submit">削除</button> -->
+            <button type="button" id="deleteBtn">削除</button>
         </form>
+        <!-- ここにモーダルを追加 -->
+        <div id="confirmModal" class="modal">
+            <div class="modal-content">
+                <p>本当に削除してもよろしいですか？</p>
+                <div class="modal-buttons">
+                    <button type="button" id="cancelBtn" class="btn-cancel">いいえ</button>
+                    <button type="button" id="confirmBtn" class="btn-danger">はい</button>
+                </div>
+            </div>
+        </div>
 
+        <script>
+            const modal = document.getElementById('confirmModal');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const confirmBtn = document.getElementById('confirmBtn');
+
+            // フォーカス可能要素
+            const focusableElements = [cancelBtn, confirmBtn];
+
+            // 削除ボタンクリック → モーダル表示
+            deleteBtn.addEventListener('click', () => {
+                modal.style.display = 'flex';
+                cancelBtn.focus(); // 最初に「いいえ」にフォーカス
+            });
+
+            // 「いいえ」クリック → モーダル閉じる
+            cancelBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            // 「はい」クリック → 削除フォーム送信
+            confirmBtn.addEventListener('click', () => {
+                document.forms['delete'].submit();
+            });
+
+            // モーダル内のキー操作
+            modal.addEventListener('keydown', (e) => {
+                // Enterキーでアクティブなボタンを実行
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (document.activeElement === confirmBtn) {
+                        confirmBtn.click();
+                    } else if (document.activeElement === cancelBtn) {
+                        cancelBtn.click();
+                    }
+                }
+
+                // Escapeキーでモーダル閉じる
+                if (e.key === 'Escape') {
+                    modal.style.display = 'none';
+                }
+
+                // Tabキーで「はい ↔ いいえ」のみ移動
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    let idx = focusableElements.indexOf(document.activeElement);
+                    if (e.shiftKey) {
+                        // Shift+Tab → 前へ
+                        idx = (idx - 1 + focusableElements.length) % focusableElements.length;
+                    } else {
+                        // Tab → 次へ
+                        idx = (idx + 1) % focusableElements.length;
+                    }
+                    focusableElements[idx].focus();
+                }
+            });
+        </script>
     </div>
 </body>
 

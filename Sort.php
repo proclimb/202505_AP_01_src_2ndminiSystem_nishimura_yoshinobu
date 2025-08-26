@@ -35,7 +35,7 @@ if (isset($_GET['sort_order']) && in_array(strtolower($_GET['sort_order']), ['as
  * @param string      $nameKeyword     現在の検索キーワード
  * @return string                     <a>タグ形式のリンク HTML
  */
-function sortLink(string $column, string $label, ?string $currentSortBy, ?string $currentSortOrd, string $nameKeyword): string
+function sortLink(string $column, string $label, ?string $currentSortBy, ?string $currentSortOrd, string $nameKeyword, string $searchColumn): string
 {
     // 今のソートキーと同じなら矢印を表示
     $arrow = '▲▼';
@@ -47,7 +47,8 @@ function sortLink(string $column, string $label, ?string $currentSortBy, ?string
     $params = [];
     // 検索キーワードが空文字でなければ検索状態を維持
     if ($nameKeyword !== '') {
-        $params['search_name']   = $nameKeyword;
+        $params['keyword']   = $nameKeyword;
+        $params['column']  = $searchColumn; // ← ここが重要
         $params['search_submit'] = '検索';
     }
 

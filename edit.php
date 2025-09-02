@@ -24,8 +24,12 @@ require_once 'Db.php';
 require_once 'User.php';
 require_once 'Validator.php';
 
-session_cache_limiter('none');
-session_start();
+// session_cache_limiter('none');
+// session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_cache_limiter('none');
+    session_start();
+}
 
 $_SESSION['source'] = 'edit';
 
@@ -55,18 +59,51 @@ if (!empty($_POST)) {
 
     if ($validator->validate($data)) {
         // echo "バリデーション成功";
-        // echo "$dataの内容";
-        // var_dump($data);
-        // echo "$_POSTの内容";
-        // var_dump($_POST);
 
         $_SESSION['input_data'] = $_POST;
-        $_SESSION['files'] = $_FILES;
+        // $_SESSION['files'] = $_FILES;
 
-        // echo "update.php直前";
+        if (!empty($_FILES['document1']['tmp_name'])) {
+            $_SESSION['files']['document1'] = $_FILES['document1'];
+        }
+        if (!empty($_FILES['document2']['tmp_name'])) {
+            $_SESSION['files']['document2'] = $_FILES['document2'];
+        }
+        // 表示用ファイル名も保存
+        $_SESSION['file_names'] = [
+            'document1' => $_FILES['document1']['name'] ?? ($_SESSION['file_names']['document1'] ?? ''),
+            'document2' => $_FILES['document2']['name'] ?? ($_SESSION['file_names']['document2'] ?? ''),
+        ];
 
-        // header('Location: update.php');
-        include 'update.php';
+
+        echo "edit.php";
+        var_dump($_FILES);
+        var_dump($_POST);
+
+        // ▼ここに追加
+        $tmpDir = __DIR__ . '/tmp_uploads/';
+        if (!file_exists($tmpDir)) {
+            mkdir($tmpDir, 0777, true);
+        }
+
+        $files = [];
+        foreach (['document1', 'document2'] as $key) {
+            if (!empty($_FILES[$key]['tmp_name']) && is_uploaded_file($_FILES[$key]['tmp_name'])) {
+                $ext = pathinfo($_FILES[$key]['name'], PATHINFO_EXTENSION);
+                $newPath = $tmpDir . uniqid() . '.' . $ext;
+                move_uploaded_file($_FILES[$key]['tmp_name'], $newPath);
+                $files[$key] = $newPath;
+            }
+        }
+        $_SESSION['files'] = $files;
+        // ▲ここまで追加
+
+
+        // ← ここに追加
+        // include 'update.php';
+        header('Location: confirm.php');
+        // include 'confirm.php';
+        // header('Location: confirm.php?id=' . urlencode($id));
         exit();
     } else {
         // echo "バリデーション失敗";
@@ -78,6 +115,7 @@ if (!empty($_POST)) {
             'document1' => $_FILES['document1']['name'] ?? '',
             'document2' => $_FILES['document2']['name'] ?? '',
         ];
+
 
         header('Location: edit.php?id=' . urlencode($id));
         exit();
@@ -125,6 +163,9 @@ $file_names = $_SESSION['file_names'] ?? [];
                     </ul>
                 </div>
             <?php endif; ?> -->
+
+            <!-- mode フラグを追加 -->
+            <input type="hidden" name="mode" value="edit">
 
             <!-- <input type="hidden" name="id" value="<?= htmlspecialchars($inputs['id'] ?? $originalData['id'] ?? '') ?>"> -->
             <input type="hidden" name="id" value="<?= htmlspecialchars($inputs['id'] ?? $originalData['id'] ?? '') ?>">

@@ -35,30 +35,50 @@ require_once 'Db.php';
 require_once 'Validator.php';
 
 // 1.セッションの開始
-session_cache_limiter('none');
-session_start();
+// session_cache_limiter('none');
+// session_start();
+
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_cache_limiter('none');
+    session_start();
+}
+
+$_SESSION['source'] = 'input';   // ← inputから来た
 
 // 2.変数の初期化
 // *$_POSTの値があるときは初期化しない
 $error_message = [];
 $old = $_POST ?? [];
 
-// 3.入力項目の入力チェック
-if (!empty($_POST) && empty($_SESSION['input_data'])) {
-    $validator = new Validator($pdo);
+// 確認画面から戻ってきた場合
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if ($validator->validate($_POST)) {
-        $_SESSION['input_data'] = $_POST;
-        header('Location:confirm.php');
-        exit();
-    } else {
-        $error_message = $validator->getErrors();
+    // 確認画面から「内容を修正する」で戻ってきた場合
+    if (($_POST['mode'] ?? '') === 'rewrite') {
+        // セッションにある入力データを復元
+        $old = $_SESSION['input_data'] ?? [];
+    }
+    // 新規登録処理
+    elseif (($_POST['mode'] ?? '') === 'create') {
+        $validator = new Validator($pdo);
+
+        if ($validator->validate($_POST)) {
+            $_SESSION['input_data'] = $_POST;
+            $_SESSION['source'] = 'input';   // ← inputから来た
+            header('Location: confirm.php');
+            exit();
+        } else {
+            // バリデーションエラー時は入力値を保持
+            $error_message = $validator->getErrors();
+            $old = $_POST;
+        }
     }
 }
-
-// 4.セッションを破棄する
-session_destroy();
-
+// GET で戻ってきた場合（初期表示やブラウザの戻るボタン）
+elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $old = $_SESSION['input_data'] ?? [];
+}
 // 5.html の描画
 // ** これ以降は、htmlの部分になります
 // ** php の部分は、入力した値を表示する時と入力エラー時のメッセージを表示する時に使用しています
@@ -251,6 +271,10 @@ session_destroy();
                     <?php endif ?>
                 </div>
             </div>
+
+            <!-- ここに mode=create を追加 -->
+            <input type="hidden" name="mode" value="create">
+
             <button type="submit">確認画面へ</button>
             <a href="index.php">
                 <button type="button">TOPに戻る</button>

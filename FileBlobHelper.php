@@ -19,20 +19,25 @@ class FileBlobHelper
             || ! isset($fileArr['error'])
             || $fileArr['error'] !== UPLOAD_ERR_OK
         ) {
+            // echo "ファイル存在チェック";
             return null;
         }
 
         // 一時保存先が存在しない場合も null
-        if (! isset($fileArr['tmp_name']) || ! is_uploaded_file($fileArr['tmp_name'])) {
+        // if (! isset($fileArr['tmp_name']) || ! is_uploaded_file($fileArr['tmp_name'])) {
+        if (! isset($fileArr['tmp_name'])) {
+            // echo "一時保存ファイル存在チェック";
             return null;
         }
 
         // MIME タイプを取得してチェック
         $mime = mime_content_type($fileArr['tmp_name']);
+        // var_dump($fileArr['tmp_name']);
         if ($mime !== 'image/png' && $mime !== 'image/jpeg' && $mime !== 'image/jpg') {
+            // echo "MIMEチェック";
+            // var_dump($mime);
             return null;
         }
-
         // 例：サイズ制限をかけたい場合はここにチェックを入れる
         // if ($fileArr['size'] > 5 * 1024 * 1024) {
         //     return null;
@@ -40,12 +45,15 @@ class FileBlobHelper
 
         // file_get_contents で BLOB として読み込む
         $blob = file_get_contents($fileArr['tmp_name']);
+        // echo "file get contents";
         if ($blob === false) {
+            // echo "BLOB 取得失敗\n";
             return null;
         }
-
+        // echo "BLOB 取得成功\n";
         return $blob;
     }
+
 
     /**
      * 前後 2 つのファイルを同時に受け取り、それぞれ BLOB 化して返却する。
@@ -60,12 +68,14 @@ class FileBlobHelper
     {
         $frontBlob = self::getBlobFromImage($frontFiles);
         $backBlob  = self::getBlobFromImage($backFiles);
-
+        // var_dump($frontFiles);
+        // var_dump($backFiles);
         // どちらも null の場合、アップロードなしとみなして null を返す
         if ($frontBlob === null && $backBlob === null) {
+            // var_dump($frontBlob);
+            // var_dump($backBlob);
             return null;
         }
-
         return [
             'front' => $frontBlob,
             'back'  => $backBlob,

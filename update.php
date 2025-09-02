@@ -15,7 +15,11 @@
  * **   更新完了のメッセージを表示します
  */
 
-session_start();
+// session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_cache_limiter('none');
+    session_start();
+}
 
 $data = $_SESSION['input_data'] ?? null;
 $files = $_SESSION['files'] ?? null;
@@ -37,13 +41,13 @@ require_once 'Validator.php';
 // ------------------------
 // 入力値のバリデーション
 // ------------------------
-// $validator = new Validator($pdo);
-// if (!$validator->validate($_POST)) {
-//     $_SESSION['errors'] = $validator->getErrors();
-//     $_SESSION['old'] = $_POST;
-//     header('Location: edit.php?id=' . $_POST['id']);
-//     exit;
-// }
+$validator = new Validator($pdo);
+if (!$validator->validate($_POST)) {
+    $_SESSION['errors'] = $validator->getErrors();
+    $_SESSION['old'] = $_POST;
+    header('Location: edit.php?id=' . $_POST['id']);
+    exit;
+}
 
 // 2. 入力データ取得
 // 2-1. ユーザーデータ取得
@@ -81,13 +85,49 @@ try {
 
     // 6. ファイルアップロードを BLOB 化して取得（保存期限なし = null）
     //    edit.php の <input type="file" name="document1"> / document2
-    $blobs = FileBlobHelper::getMultipleBlobs(
-        // $_FILES['document1'] ?? null,
-        // $_FILES['document2'] ?? null
+    // echo "update.php";
+    // var_dump($_SESSION['files']); // ← ここでファイルパスが正しく入っているか確認
 
-        $files['document1'] ?? null,  // ← $_FILES → $files に変更
-        $files['document2'] ?? null
+
+    $files = $_SESSION['files'] ?? null;
+
+    $blobInputs = [];
+
+    // document1
+    if (!empty($files['document1'])) {
+        $blobInputs['document1'] = [
+            'tmp_name' => $files['document1'],
+            'name' => $_SESSION['file_names']['document1'] ?? basename($files['document1']),
+            'type' => mime_content_type($files['document1']),
+            'error' => 0,
+            'size' => filesize($files['document1'])
+        ];
+    }
+
+    // document2
+    if (!empty($files['document2'])) {
+        $blobInputs['document2'] = [
+            'tmp_name' => $files['document2'],
+            'name' => $_SESSION['file_names']['document2'] ?? basename($files['document2']),
+            'type' => mime_content_type($files['document2']),
+            'error' => 0,
+            'size' => filesize($files['document2'])
+        ];
+    }
+
+    // BLOBを取得
+    $blobs = FileBlobHelper::getMultipleBlobs(
+        $blobInputs['document1'] ?? null,
+        $blobInputs['document2'] ?? null
     );
+
+
+    // $blobs = FileBlobHelper::getMultipleBlobs(
+    //     $files['document1'] ?? null,  // ← $_FILES → $files に変更
+    //     $files['document2'] ?? null
+    // );
+
+    // var_dump($files['document1']);
     // var_dump($files);
     // var_dump($blobs);
     // 7. BLOB が null でなければ（いずれかアップロードされたなら）user_documents に登録
@@ -107,6 +147,11 @@ try {
 
     // 8. トランザクションコミット
     $pdo->commit();
+
+    foreach ($_SESSION['files'] as $path) {
+        if (file_exists($path)) unlink($path);
+    }
+    unset($_SESSION['files']);
 } catch (Exception $e) {
     // いずれかで例外が発生したらロールバックしてエラー表示
     $pdo->rollBack();
@@ -148,7 +193,7 @@ try {
 
 
 <?php
-unset($_SESSION['input_data'], $_SESSION['files']);
+unset($_SESSION['files'], $_SESSION['file_names'], $_SESSION['input_data'], $_SESSION['source']);
 ?>
 
 </html>

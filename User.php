@@ -21,6 +21,7 @@ class User
                     birth_date,
                     tel,
                     email,
+                    password,
                     created_at
                     )
                 VALUES (
@@ -30,6 +31,7 @@ class User
                     :birth_date,
                     :tel,
                     :email,
+                    :password,
                     now()
                     )";
         $stmt = $this->pdo->prepare($sql);
@@ -39,7 +41,8 @@ class User
             ':gender_flag'  => $data['gender_flag'],
             ':birth_date'   => $data['birth_date'],
             ':tel'          => $data['tel'],
-            ':email'        => $data['email']
+            ':email'        => $data['email'],
+            ':password'     => $data['password'] // ここでハッシュを登録
         ]);
         return $this->pdo->lastInsertId();
     }
@@ -247,6 +250,8 @@ class User
                     u.birth_date,
                     u.tel,
                     u.email,
+                    u.password,
+                    u.role,
                     a.postal_code,    -- 郵便番号
                     a.prefecture,
                     a.city_town,

@@ -253,6 +253,7 @@ form>div>div:after {
 /* 8450~8453 */
 form>div input[type=text],
 form>div input[type=email],
+form>div input[type=password],
 form>div textarea,
 form>div select {
     display: block;
@@ -310,7 +311,7 @@ input[type=radio] {
 body>div label {
     margin-bottom: 0;
     text-align: right;
-    width: 145px;
+    width: 150px;
     float: left;
     position: relative;
     min-height: 1px;
@@ -800,5 +801,115 @@ input.readonly-field[type="text"] {
 }
 
 /* -------------------------------------------------------------------
-   ↑ ここまで変更・追加箇所
+↑ ここまで変更・追加箇所
    ------------------------------------------------------------------- */
+/* ===========================
+   login.php 専用スタイル
+   =========================== */
+/* 全体リセット */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: #f0f2f5;
+    color: #333;
+}
+
+/* ヘッダー */
+.header {
+    background-color: #009ecf;
+    color: #fff;
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* フォームラッパー */
+.wrapper {
+    max-width: 760px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+/* フォームタイトル */
+.wrapper h2 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* エラーメッセージ */
+.error-message {
+    color: red;
+    text-align: center;
+    margin-bottom: 20px;
+    border: none;
+    /* 枠線を消す */
+    background: none;
+    /* 背景色を消す */
+    padding: 0;
+    /* 内側の余白もゼロに */
+}
+
+/* フォームグループ */
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    background-color: #f6f6f6;
+    border-radius: 3px;
+}
+
+.form-group label {
+    width: 150px;
+    font-weight: bold;
+}
+
+.form-group input {
+    flex: 1;
+    padding: 6px 12px;
+    height: 38px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+/* ボタン */
+.btn-submit {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    background-color: #009ecf;
+    color: #fff;
+    border: 1px solid #0093c9;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btn-submit:hover {
+    background-color: #007ea1;
+}
+
+/* 登録リンク */
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.register-link a {
+    color: #009ecf;
+    text-decoration: none;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}

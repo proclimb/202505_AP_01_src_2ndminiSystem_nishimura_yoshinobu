@@ -270,6 +270,36 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                             <?= htmlspecialchars($error_message['email']) ?></div>
                     <?php endif ?>
                 </div>
+                <!-- パスワード入力欄 -->
+                <div>
+                    <label>パスワード<span>必須</span></label>
+                    <input
+                        type="password"
+                        name="password"
+                        placeholder="例）********"
+                        value="<?= htmlspecialchars($old['password'] ?? '') ?>">
+                    <?php if (isset($error_message['password'])) : ?>
+                        <div class="error-msg">
+                            <?= htmlspecialchars($error_message['password']) ?>
+                        </div>
+                    <?php endif ?>
+                </div>
+
+                <!-- 確認用パスワード入力欄 -->
+                <div>
+                    <label>パスワード（確認）<span>必須</span></label>
+                    <input
+                        type="password"
+                        name="password_confirm"
+                        placeholder="もう一度入力してください"
+                        value="<?= htmlspecialchars($old['password_confirm'] ?? '') ?>">
+                    <?php if (isset($error_message['password_confirm'])) : ?>
+                        <div class="error-msg">
+                            <?= htmlspecialchars($error_message['password_confirm']) ?>
+                        </div>
+                    <?php endif ?>
+                </div>
+
             </div>
 
             <!-- ここに mode=create を追加 -->

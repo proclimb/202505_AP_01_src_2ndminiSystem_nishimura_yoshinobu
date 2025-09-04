@@ -18,7 +18,10 @@
  * **   ユーザ情報が有る場合は、foreach を使用して検索結果をします
  * **   編集のリンクに関しては、idの値をURLに設定してGET送信で「更新・削除」へidを渡します
  */
-
+if (session_status() === PHP_SESSION_NONE) {
+    session_cache_limiter('none'); // 必要なら
+    session_start();
+}
 //  1.DB接続情報、クラス定義の読み込み
 require_once 'Db.php';
 require_once 'User.php';
@@ -96,6 +99,9 @@ $users = $userModel->fetchUsersWithKeyword(
     $column
 );
 
+$role = $_SESSION['role'];
+// var_dump($_SESSION['role']);
+
 // 3.html の描画
 ?>
 <!DOCTYPE html>
@@ -170,6 +176,12 @@ $users = $userModel->fetchUsersWithKeyword(
             <th>
                 <?= sortLink('email', 'メールアドレス', $sortBy, $sortOrd, $keyword, $column) ?>
             </th>
+            <?php if ($role === 'admin'): ?>
+                <th>パスワード</th>
+            <?php else: ?>
+                <!-- user の場合は非表示 -->
+            <?php endif; ?>
+
             <th>画像①</th>
             <th>画像②</th>
         </tr>
@@ -199,6 +211,12 @@ $users = $userModel->fetchUsersWithKeyword(
                     <td><?= htmlspecialchars($val['prefecture'] . $val['city_town'] . $val['building']); ?></td>
                     <td><?= htmlspecialchars($val['tel']); ?></td>
                     <td><?= htmlspecialchars($val['email']); ?></td>
+                    <?php if ($role === 'admin'): ?>
+                        <!-- <?= htmlspecialchars($val['password'], ENT_QUOTES, 'UTF-8'); ?> -->
+                        <td><?= htmlspecialchars($val['password']); ?></td>
+                    <?php else: ?>
+                        <!-- user の場合は非表示 -->
+                    <?php endif; ?>
                     <!-- 追加した出力部分：書類①(front_image) -->
                     <td><?php if ((int)$val['has_front'] === 1): ?>
                             <a
@@ -231,6 +249,9 @@ $users = $userModel->fetchUsersWithKeyword(
     <!-- 8. 「TOPに戻る」ボタン -->
     <a href="index.php">
         <button type="button">TOPに戻る</button>
+    </a>
+    <a href="logout.php">
+        <button type="button">ログアウト</button>
     </a>
 </body>
 

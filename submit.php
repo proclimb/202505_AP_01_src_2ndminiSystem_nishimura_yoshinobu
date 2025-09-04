@@ -36,21 +36,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $building = $_POST['building'];
     $tel = $_POST['tel'];
     $email = $_POST['email'];
+    $password = $_POST['password']; // 入力されたパスワード
 }
 
 //DBへの格納する値の形成
 $birth_date = sprintf('%04d-%02d-%02d', $y, $m, $d);
 
+$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
 // 3-1.Userクラスをインスタンス化
 $user = new User($pdo);
 // 3-2.Userクラスのcreateメソッドを実行
+
+$genderFlag = $_POST['gender'] ?? null;
+
 $userId = $user->create([
     'name' => $_POST['name'],
     'kana' => $_POST['kana'],
-    'gender_flag' => $_POST['gender'],
+    // 'gender_flag' => $_POST['gender'],
+    'gender_flag' => $genderFlag,
     'birth_date' => $birth_date,
     'tel' => $_POST['tel'],
-    'email' => $_POST['email']
+    'email' => $_POST['email'],
+    'password'    => $hashedPassword // ハッシュ化したパスワードを渡す
 ]);
 
 // 4-1.UserAddressクラスをインスタンス化
@@ -62,8 +70,11 @@ $address->create([
     'prefecture' => $_POST['prefecture'],
     'city_town' => $_POST['city_town'],
     'building' => $_POST['building']
-])
+]);
 
+// 登録完了したら入力データをクリア
+unset($_SESSION['input_data']); // 登録画面の入力データ
+unset($_SESSION['source']);     // 登録経路フラグ
 // 4.html の描画
 ?>
 <!DOCTYPE html>
@@ -90,6 +101,9 @@ $address->create([
             </p>
             <a href="index.php">
                 <button type="button">TOPに戻る</button>
+            </a>
+            <a href="login.php">
+                <button type="button">ログイン画面に戻る</button>
             </a>
         </div>
     </div>

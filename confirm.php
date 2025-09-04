@@ -139,6 +139,8 @@ $actionUrl = $mode === 'edit' ? 'update.php' : 'submit.php';
             <input type="hidden" name="building" value="<?php echo $_POST['building'] ?>">
             <input type="hidden" name="tel" value="<?php echo $_POST['tel'] ?>">
             <input type="hidden" name="email" value="<?php echo $_POST['email'] ?>">
+            <input type="hidden" name="password" value="<?php echo $_POST['password'] ?>">
+            <input type="hidden" name="password_confirm" value="<?php echo $_POST['password_confirm'] ?>">
             <!-- <h1 class="contact-title">登録内容確認</h1> -->
             <!-- <p>登録内容をご入力の上、「登録する」ボタンをクリックしてください。</p> -->
             <?php if ($source === 'input'): ?>
@@ -208,6 +210,14 @@ $actionUrl = $mode === 'edit' ? 'update.php' : 'submit.php';
                 <div>
                     <label>メールアドレス</label>
                     <p><?= htmlspecialchars($_POST['email']) ?></p>
+                </div>
+                <div>
+                    <label>パスワード</label>
+                    <p><?= str_repeat('●', strlen($_POST['password'] ?? '')) ?></p>
+                </div>
+                <div>
+                    <label>パスワード（確認）</label>
+                    <p><?= str_repeat('●', strlen($_POST['password_confirm'] ?? '')) ?></p>
                 </div>
                 <?php if (!empty($_SESSION['file_names']['document1'])): ?>
                     <div>

@@ -166,6 +166,19 @@ class Validator
             $this->error_message['email'] = '有効なメールアドレスを入力してください';
         }
 
+        // パスワード
+        if (empty($data['password'])) {
+            $this->error_message['password'] = 'パスワードが入力されていません';
+        } elseif (mb_strlen($data['password']) > 5) {
+            $this->error_message['password'] = 'パスワードは5文字以内で入力してください';
+        }
+        // パスワード（確認）
+        if (empty($data['password_confirm'])) {
+            $this->error_message['password_confirm'] = 'パスワード（確認）が入力されていません';
+        } elseif ($data['password'] !== $data['password_confirm']) {
+            $this->error_message['password_confirm'] = 'パスワードと一致しません';
+        }
+
         // ファイルのMIMEタイプをチェックする処理
         if (isset($data['document1']) && is_array($data['document1']) && $data['document1']['error'] === UPLOAD_ERR_OK) {
             $mime1 = mime_content_type($data['document1']['tmp_name']);

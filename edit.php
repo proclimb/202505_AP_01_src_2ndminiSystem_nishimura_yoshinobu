@@ -19,22 +19,28 @@
  * ** 4.html を描画
  */
 
+session_cache_limiter('none');
+session_start();
+// if (session_status() === PHP_SESSION_NONE) {
+//     session_cache_limiter('none');
+//     session_start();
+// }
+
 //1.DB接続情報、クラス定義の読み込み
 require_once 'Db.php';
 require_once 'User.php';
 require_once 'Validator.php';
 
-// session_cache_limiter('none');
-// session_start();
-if (session_status() === PHP_SESSION_NONE) {
-    session_cache_limiter('none');
-    session_start();
-}
-
 $_SESSION['source'] = 'edit';
 
+// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+//     var_dump($_POST);
+//     exit;
+// }
+
 // 2.変数の初期化
-// *$_POSTの値があるときは初期化しない
+// *$_POSTの値があるときは初期化しな
+// var_dump($_POST, $input, $old);
 $error_message = [];
 $old = $_POST ?? $originalData;
 $inputs = $old;
@@ -50,11 +56,21 @@ $user = new User($pdo);
 // $_POST = $user->findById($id);
 // echo ($id);
 $originalData = $user->findById($id);
+// echo "バリデーション手前";
+// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+//     echo '<pre>';
+//     var_dump($_POST);
+//     var_dump($_FILES);
+//     echo '</pre>';
+//     exit;
+// }
 // バリデーション処理
+// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (!empty($_POST)) {
     $data = array_merge($_POST, $_FILES);
     $data['source'] = $_SESSION['source'] ?? '';
-
+    // var_dump($_SESSION['source']);
+    // echo "バリデーション開始";
     $validator = new Validator($pdo);
 
     if ($validator->validate($data)) {
@@ -76,9 +92,9 @@ if (!empty($_POST)) {
         ];
 
 
-        echo "edit.php";
-        var_dump($_FILES);
-        var_dump($_POST);
+        // echo "edit.php";
+        // var_dump($_SESSION['source']);
+        // var_dump($_POST);
 
         // ▼ここに追加
         $tmpDir = __DIR__ . '/tmp_uploads/';
@@ -106,7 +122,7 @@ if (!empty($_POST)) {
         // header('Location: confirm.php?id=' . urlencode($id));
         exit();
     } else {
-        // echo "バリデーション失敗";
+        echo "バリデーション失敗";
 
         $_SESSION['errors'] = $validator->getErrors();
         $_SESSION['inputs'] = $data;
@@ -115,7 +131,8 @@ if (!empty($_POST)) {
             'document1' => $_FILES['document1']['name'] ?? '',
             'document2' => $_FILES['document2']['name'] ?? '',
         ];
-
+        // var_dump($validator->getErrors());
+        // exit();
 
         header('Location: edit.php?id=' . urlencode($id));
         exit();
@@ -163,7 +180,7 @@ $file_names = $_SESSION['file_names'] ?? [];
                     </ul>
                 </div>
             <?php endif; ?> -->
-
+            <!-- <?php var_dump($inputs); ?> -->
             <!-- mode フラグを追加 -->
             <input type="hidden" name="mode" value="edit">
 

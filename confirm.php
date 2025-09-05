@@ -211,14 +211,17 @@ $actionUrl = $mode === 'edit' ? 'update.php' : 'submit.php';
                     <label>メールアドレス</label>
                     <p><?= htmlspecialchars($_POST['email']) ?></p>
                 </div>
-                <div>
-                    <label>パスワード</label>
-                    <p><?= str_repeat('●', strlen($_POST['password'] ?? '')) ?></p>
-                </div>
-                <div>
-                    <label>パスワード（確認）</label>
-                    <p><?= str_repeat('●', strlen($_POST['password_confirm'] ?? '')) ?></p>
-                </div>
+                <?php if ($source === 'input'): ?>
+                    <div>
+                        <label>パスワード</label>
+                        <p><?= str_repeat('●', strlen($_POST['password'] ?? '')) ?></p>
+                    </div>
+                    <div>
+                        <label>パスワード（確認）</label>
+                        <p><?= str_repeat('●', strlen($_POST['password_confirm'] ?? '')) ?></p>
+                    </div> <?php elseif ($source === 'edit'): ?>
+                <?php endif; ?>
+
                 <?php if (!empty($_SESSION['file_names']['document1'])): ?>
                     <div>
                         <label>本人確認書類（表）</label>

@@ -18,10 +18,10 @@
  * **   ユーザ情報が有る場合は、foreach を使用して検索結果をします
  * **   編集のリンクに関しては、idの値をURLに設定してGET送信で「更新・削除」へidを渡します
  */
-if (session_status() === PHP_SESSION_NONE) {
-    session_cache_limiter('none'); // 必要なら
-    session_start();
-}
+// if (session_status() === PHP_SESSION_NONE) {
+//     session_cache_limiter('none'); // 必要なら
+//     session_start();
+// }
 //  1.DB接続情報、クラス定義の読み込み
 require_once 'Db.php';
 require_once 'User.php';
@@ -101,7 +101,13 @@ $users = $userModel->fetchUsersWithKeyword(
 
 $role = $_SESSION['role'];
 // var_dump($_SESSION['role']);
-
+function calculateAge($birthDate)
+{
+    if (!$birthDate) return '';
+    $birth = new DateTime($birthDate);
+    $today = new DateTime('today');
+    return $birth->diff($today)->y; // 満年齢
+}
 // 3.html の描画
 ?>
 <!DOCTYPE html>
@@ -166,6 +172,7 @@ $role = $_SESSION['role'];
             </th>
             <th>性別</th>
             <th>生年月日</th>
+            <th>年齢</th>
             <!-- ② 郵便番号 ソートリンク -->
             <th>
                 <?= sortLink('postal_code', '郵便番号', $sortBy, $sortOrd, $keyword, $column) ?>
@@ -207,6 +214,7 @@ $role = $_SESSION['role'];
                                 : ($val['gender_flag'] == '3' ? 'その他' : '未回答')); ?>
                     </td>
                     <td><?= date('Y年n月j日', htmlspecialchars(strtotime($val['birth_date']))); ?></td>
+                    <td><?= calculateAge($val['birth_date']); ?>歳</td>
                     <td><?= htmlspecialchars($val['postal_code']); ?></td>
                     <td><?= htmlspecialchars($val['prefecture'] . $val['city_town'] . $val['building']); ?></td>
                     <td><?= htmlspecialchars($val['tel']); ?></td>

@@ -18,10 +18,10 @@
  * **   ユーザ情報が有る場合は、foreach を使用して検索結果をします
  * **   編集のリンクに関しては、idの値をURLに設定してGET送信で「更新・削除」へidを渡します
  */
-// if (session_status() === PHP_SESSION_NONE) {
-//     session_cache_limiter('none'); // 必要なら
-//     session_start();
-// }
+if (session_status() === PHP_SESSION_NONE) {
+    session_cache_limiter('none'); // 必要なら
+    session_start();
+}
 //  1.DB接続情報、クラス定義の読み込み
 require_once 'Db.php';
 require_once 'User.php';
@@ -68,6 +68,10 @@ $sortOrd = $_GET['sort_order'] ?? 'asc';
 // ページ番号
 $page = (int)($_GET['page'] ?? 1);
 
+$ageMin = isset($_GET['age_min']) && $_GET['age_min'] !== '' ? (int)$_GET['age_min'] : null;
+$ageMax = isset($_GET['age_max']) && $_GET['age_max'] !== '' ? (int)$_GET['age_max'] : null;
+
+
 // 検索ボタンを押した場合はページを1にリセット
 if (isset($_GET['search_submit'])) {
     $page = 1;
@@ -79,7 +83,7 @@ if (isset($_GET['search_submit'])) {
 // 2. ページネーション用定数・総件数数取得
 // ---------------------------------------------
 $userModel  = new User($pdo);
-$totalCount = $userModel->countUsersWithKeyword($keyword, $column);
+$totalCount = $userModel->countUsersWithKeyword($keyword, $column, $ageMin, $ageMax);
 
 // 1ページあたりの表示件数
 $limit = 10;
@@ -96,7 +100,9 @@ $users = $userModel->fetchUsersWithKeyword(
     $sortOrd,
     $offset,
     $limit,
-    $column
+    $column,
+    $ageMin,
+    $ageMax
 );
 
 $role = $_SESSION['role'];
@@ -128,20 +134,44 @@ function calculateAge($birthDate)
     </div>
     <form method="get" action="dashboard.php" class="name-search-form" style="width:80%; margin: 20px auto;">
 
-        <!-- 検索ボタン -->
-        <input type="submit" name="search_submit" value="検索" class="form-control btn">
 
-        <!-- 検索ワード入力 -->
-        <input type="text" name="keyword" value="<?= htmlspecialchars($keyword, ENT_QUOTES) ?>" class="form-control" placeholder="検索ワードを入力">
+        <div class="search-form-container">
 
-        <!-- 検索対象プルダウン -->
-        <select name="column" class="form-select">
-            <option value="name" <?= $column === 'name' ? 'selected' : '' ?>>名前</option>
-            <option value="kana" <?= $column === 'kana' ? 'selected' : '' ?>>ふりがな</option>
-            <option value="address" <?= $column === 'address' ? 'selected' : '' ?>>住所</option>
-        </select>
+            <!-- 1段目: 検索ワード左、プルダウン右 -->
+            <div class="form-row first-row">
+                <input type="text" name="keyword"
+                    value="<?= htmlspecialchars($_GET['keyword'] ?? '', ENT_QUOTES) ?>"
+                    placeholder="検索ワードを入力"
+                    class="custom-input input-text">
 
+                <select name="column" class="custom-input select-box">
+                    <option value="name" <?= ($_GET['column'] ?? '') === 'name' ? 'selected' : '' ?>>名前</option>
+                    <option value="kana" <?= ($_GET['column'] ?? '') === 'kana' ? 'selected' : '' ?>>ふりがな</option>
+                    <option value="address" <?= ($_GET['column'] ?? '') === 'address' ? 'selected' : '' ?>>住所</option>
+                </select>
+            </div>
 
+            <!-- 2段目: 年齢下限・～・上限 + ボタン -->
+            <div class="form-row second-row">
+                <label for="age_min" class="custom-label">下限</label>
+                <input type="number" name="age_min"
+                    value="<?= htmlspecialchars($_GET['age_min'] ?? '', ENT_QUOTES) ?>"
+                    placeholder="年齢下限"
+                    class="custom-input input-number">
+
+                <label class="tilde">～</label> <!-- 独立 -->
+
+                <label for="age_max" class="custom-label">上限</label>
+                <input type="number" name="age_max"
+                    value="<?= htmlspecialchars($_GET['age_max'] ?? '', ENT_QUOTES) ?>"
+                    placeholder="年齢上限"
+                    class="custom-input input-number">
+
+                <input type="submit" name="search_submit" value="検索" class="custom-button">
+                <a href="dashboard.php" class="custom-button">条件をクリア</a>
+            </div>
+
+        </div>
 
         <!-- <label for="search_name">名前で検索：</label>
         <input
@@ -252,7 +282,7 @@ function calculateAge($birthDate)
     </table>
 
     <!-- 7. ページネーション -->
-    <?= paginationLinks($page, $totalPages, $keyword, $sortBy, $sortOrd, $column) ?>
+    <?= paginationLinks($page, $totalPages, $keyword, $sortBy, $sortOrd, $column, $ageMin, $ageMax) ?>
 
     <!-- 8. 「TOPに戻る」ボタン -->
     <a href="index.php">

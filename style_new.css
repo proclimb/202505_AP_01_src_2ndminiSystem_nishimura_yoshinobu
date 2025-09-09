@@ -141,7 +141,8 @@ label {
     display: inline-block;
     max-width: 100%;
     margin-bottom: 5px;
-    font-weight: 700
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 /* 8343 */
@@ -430,6 +431,7 @@ textarea+div {
 /* 8636 */
 .error-msg {
     color: red;
+    margin-left: 0px;
 }
 
 /* 新規追加 */
@@ -445,7 +447,7 @@ textarea+div {
 }
 
 .birth-selects select.form-control {
-    flex: 1;
+    flex: none;
     min-width: 110px;
     margin: 0px 11px;
     max-width: 110px;
@@ -723,7 +725,7 @@ input.readonly-field[type="text"] {
     box-sizing: border-box;
     /* 幅・高さにpaddingを含める */
     vertical-align: middle;
-    margin-right: 5px;
+    margin-right: 8px;
     /* 横並び間隔 */
 }
 
@@ -912,4 +914,96 @@ body {
 
 .register-link a:hover {
     text-decoration: underline;
+}
+
+/* 本人確認書類セクション専用 */
+.password-confirm-group {
+    padding-bottom: 20px;
+    /* パスワード（確認）の下に余白 */
+}
+
+/* コンテナ */
+.search-form-container {
+    margin: 10px 0 !important;
+}
+
+/* 行ごとのレイアウト */
+.form-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    /* 行内の主要間隔 */
+    margin-bottom: 10px !important;
+    margin-left: 0 !important;
+    /* 左端揃え */
+}
+
+/* ラベル */
+.custom-label {
+    width: 35px !important;
+    text-align: right !important;
+    line-height: 36px !important;
+}
+
+/* ～ラベル */
+.tilde {
+    margin: 0 5px !important;
+    line-height: 36px !important;
+}
+
+/* 入力欄・select共通 */
+.custom-input {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    padding: 0 10px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+}
+
+/* selectブラウザデフォルトリセット */
+.select-box {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+}
+
+/* 幅指定 */
+.input-text {
+    width: 200px !important;
+}
+
+.input-number {
+    width: 100px !important;
+}
+
+.select-box {
+    width: 120px !important;
+}
+
+/* ボタン */
+.custom-button {
+    display: inline-block !important;
+    vertical-align: middle !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    padding: 0 12px !important;
+    background-color: #007bff !important;
+    border: 1px solid #007bff !important;
+    border-radius: 4px !important;
+    color: #fff !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    flex: 0 0 auto !important;
+}
+
+/* ボタンホバー */
+.custom-button:hover {
+    background-color: #0056b3 !important;
+    border-color: #0056b3 !important;
 }

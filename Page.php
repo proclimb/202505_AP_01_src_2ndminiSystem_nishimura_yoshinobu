@@ -46,38 +46,52 @@ function getPaginationParams(int $totalCount, int $limit): array
  * @param string|null $sortOrd      ソート順 ("asc"|"desc")
  * @return string                  HTML の <div class="pagination">…</div> 部分
  */
-function paginationLinks(int $currentPage, int $totalPages, string $nameKeyword, ?string $sortBy, ?string $sortOrd): string
-{
-    // １度に表示するページ番号の数（例：5）
+function paginationLinks(
+    int $currentPage,
+    int $totalPages,
+    string $keyword = '',
+    ?string $sortBy = null,
+    ?string $sortOrd = 'asc',
+    string $column = 'name',
+    ?int $ageMin = null,
+    ?int $ageMax = null
+): string {
     $pageGroupSize = 5;
     $html = '';
 
-    // ベースとなる GET パラメータを準備
+    // ベースパラメータ
     $baseParams = [];
-    if ($nameKeyword !== '') {
-        $baseParams['search_name']   = $nameKeyword;
-        $baseParams['search_submit'] = '検索';
+    if ($keyword !== '') {
+        $baseParams['keyword'] = $keyword;
     }
     if ($sortBy !== null) {
-        $baseParams['sort_by']    = $sortBy;
+        $baseParams['sort_by'] = $sortBy;
         $baseParams['sort_order'] = $sortOrd;
     }
+    if (!empty($column)) {
+        $baseParams['column'] = $column;
+    }
+    if ($ageMin !== null) {
+        $baseParams['age_min'] = $ageMin;
+    }
+    if ($ageMax !== null) {
+        $baseParams['age_max'] = $ageMax;
+    }
 
-    // グループ単位での開始ページ & 終了ページを計算
+    // グループ計算
     $groupStart = (int)(floor(($currentPage - 1) / $pageGroupSize) * $pageGroupSize) + 1;
     $groupEnd   = min($groupStart + $pageGroupSize - 1, $totalPages);
 
-    // 「前へ」リンク（現在ページ > 1 のときのみ表示）
+    // 「前へ」
     if ($currentPage > 1) {
         $prevParams = array_merge($baseParams, ['page' => $currentPage - 1]);
         $qs = http_build_query($prevParams, '', '&amp;');
         $html .= "<a href=\"dashboard.php?$qs\">&lt; 前へ</a> ";
     }
 
-    // グループ内のページ番号リンク
+    // ページ番号
     for ($p = $groupStart; $p <= $groupEnd; $p++) {
         if ($p === $currentPage) {
-            // カレントページは <strong> で強調
             $html .= "<strong>$p</strong> ";
         } else {
             $linkParams = array_merge($baseParams, ['page' => $p]);
@@ -86,18 +100,14 @@ function paginationLinks(int $currentPage, int $totalPages, string $nameKeyword,
         }
     }
 
-    // 「次へ」リンク（現在ページ < 総ページ数 のときのみ表示）
+    // 「次へ」
     if ($currentPage < $totalPages) {
         $nextParams = array_merge($baseParams, ['page' => $currentPage + 1]);
         $qs = http_build_query($nextParams, '', '&amp;');
         $html .= "<a href=\"dashboard.php?$qs\">次へ &gt;</a>";
     }
 
-    // 総ページ数が1以下（＝ページ遷移不要）なら空文字を返す
-    if ($totalPages <= 1) {
-        return '';
-    }
+    if ($totalPages <= 1) return '';
 
-    // HTML を <div> で囲んで返す
     return "<div class=\"pagination\" style=\"width:80%; margin: 10px auto; text-align:center;\">$html</div>";
 }

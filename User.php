@@ -169,7 +169,7 @@ class User
      * @param string|null $keyword  名前の部分一致キーワード（空文字 or null は検索なし＝全件）
      * @return int                  マッチしたレコード数
      */
-    public function countUsersWithKeyword(?string $keyword, string $column = 'name'): int
+    public function countUsersWithKeyword(?string $keyword, string $column = 'name', ?int $ageMin = null, ?int $ageMax = null): int
     {
         $sql = "SELECT COUNT(*) AS cnt
                   FROM user_base u
@@ -194,6 +194,13 @@ class User
                     ON u.id = ud.user_id
                  WHERE u.del_flag = 0
         ";
+        // 年齢条件を追加
+        if (!is_null($ageMin)) {
+            $sql .= " AND TIMESTAMPDIFF(YEAR, u.birth_date, CURDATE()) >= :age_min ";
+        }
+        if (!is_null($ageMax)) {
+            $sql .= " AND TIMESTAMPDIFF(YEAR, u.birth_date, CURDATE()) <= :age_max ";
+        }
         $params = [];
         // if ($keyword !== null && trim($keyword) !== '') {
         //     $sql .= " AND u.name LIKE :keyword ";
@@ -217,6 +224,13 @@ class User
         if (isset($params[':keyword'])) {
             $stmt->bindValue(':keyword', $params[':keyword'], PDO::PARAM_STR);
         }
+        // バインド: 年齢
+        if (!is_null($ageMin)) {
+            $stmt->bindValue(':age_min', $ageMin, PDO::PARAM_INT);
+        }
+        if (!is_null($ageMax)) {
+            $stmt->bindValue(':age_max', $ageMax, PDO::PARAM_INT);
+        }
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)$row['cnt'];
@@ -239,7 +253,9 @@ class User
         ?string $sortOrder,
         int $offset,
         int $limit,
-        string $column = 'name'
+        string $column = 'name',
+        ?int $ageMin = null,
+        ?int $ageMax = null
     ): array {
         // 基本の SELECT 文（search() と同様の JOIN 構造）
         $sql = "SELECT
@@ -280,6 +296,13 @@ class User
                   ON u.id = ud.user_id
                WHERE u.del_flag = 0
         ";
+        // キーワード検索後
+        if (!is_null($ageMin)) {
+            $sql .= " AND TIMESTAMPDIFF(YEAR, u.birth_date, CURDATE()) >= :age_min ";
+        }
+        if (!is_null($ageMax)) {
+            $sql .= " AND TIMESTAMPDIFF(YEAR, u.birth_date, CURDATE()) <= :age_max ";
+        }
         $params = [];
 
         // (1) キーワード検索 条件追加
@@ -339,6 +362,17 @@ class User
         if (isset($params[':keyword'])) {
             $stmt->bindValue(':keyword', $params[':keyword'], PDO::PARAM_STR);
         }
+        // バインド: LIMIT, OFFSET
+        $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+        // バインド: 年齢
+        if (!is_null($ageMin)) {
+            $stmt->bindValue(':age_min', $ageMin, PDO::PARAM_INT);
+        }
+        if (!is_null($ageMax)) {
+            $stmt->bindValue(':age_max', $ageMax, PDO::PARAM_INT);
+        }
+
         // バインド: LIMIT, OFFSET
         $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':off', $offset, PDO::PARAM_INT);

@@ -22,6 +22,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_cache_limiter('none'); // 必要なら
     session_start();
 }
+
+// セッションを全消去
+session_unset();
+
 //  1.DB接続情報、クラス定義の読み込み
 require_once 'Db.php';
 require_once 'User.php';

@@ -51,21 +51,43 @@ $_SESSION['source'] = 'input';   // ← inputから来た
 $error_message = [];
 $old = $_POST ?? [];
 
-// 確認画面から戻ってきた場合
+// POSTの場合
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    // 確認画面から「内容を修正する」で戻ってきた場合
     if (($_POST['mode'] ?? '') === 'rewrite') {
-        // セッションにある入力データを復元
+        // 確認画面から戻ってきた場合
         $old = $_SESSION['input_data'] ?? [];
-    }
-    // 新規登録処理
-    elseif (($_POST['mode'] ?? '') === 'create') {
+    } elseif (($_POST['mode'] ?? '') === 'create') {
         $validator = new Validator($pdo);
 
         if ($validator->validate($_POST)) {
             $_SESSION['input_data'] = $_POST;
-            $_SESSION['source'] = 'input';   // ← inputから来た
+            $_SESSION['source'] = 'input';
+
+            // 一時アップロード先
+            $tmpDir = __DIR__ . '/tmp_upload/';
+            if (!file_exists($tmpDir)) mkdir($tmpDir, 0777, true);
+
+            // アップロードファイルの処理
+            foreach (['document1', 'document2'] as $doc) {
+                if (!empty($_FILES[$doc]['tmp_name']) && $_FILES[$doc]['error'] === UPLOAD_ERR_OK) {
+                    $ext = pathinfo($_FILES[$doc]['name'], PATHINFO_EXTENSION);
+                    $newPath = $tmpDir . uniqid() . '.' . $ext;
+
+                    // ファイルを一時ディレクトリへ移動
+                    if (move_uploaded_file($_FILES[$doc]['tmp_name'], $newPath)) {
+                        $_SESSION['files'][$doc] = $newPath;                  // 実ファイルパス
+                        $_SESSION['file_names'][$doc] = $_FILES[$doc]['name']; // 表示用ファイル名
+                    }
+                }
+            }
+
+            // echo "<pre>";
+            // var_dump($_FILES);
+            // var_dump($_SESSION['files'] ?? []);
+            // var_dump($_SESSION['file_names'] ?? []);
+            // echo "</pre>";
+            // exit;
+
             header('Location: confirm.php');
             exit();
         } else {
@@ -102,7 +124,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
         <h2>登録画面</h2>
     </div>
     <div>
-        <form action="input.php" method="post" name="form">
+        <form action="input.php" method="post" name="form" enctype="multipart/form-data">
             <h1 class="contact-title">登録内容入力</h1>
             <p>登録内容をご入力の上、「確認画面へ」ボタンをクリックしてください。</p>
             <div>
@@ -111,24 +133,29 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     <input
                         type="text"
                         name="name"
+                        id="name"
                         placeholder="例）山田太郎"
                         value="<?= htmlspecialchars($old['name']) ?>">
-                    <?php if (isset($error_message['name'])) : ?>
-                        <div class="error-msg">
-                            <?= htmlspecialchars($error_message['name']) ?></div>
-                    <?php endif ?>
+                    <!-- ここにエラーメッセージを表示 -->
+                    <div id="name-error" class="error-msg2">
+                        <?php if (isset($error_message['name'])) : ?>
+                            <?= htmlspecialchars($error_message['name']) ?>
+                        <?php endif ?>
+                    </div>
                 </div>
                 <div>
                     <label>ふりがな<span>必須</span></label>
                     <input
                         type="text"
                         name="kana"
+                        id="kana"
                         placeholder="例）やまだたろう"
                         value="<?= htmlspecialchars($old['kana']) ?>">
-                    <?php if (isset($error_message['kana'])) : ?>
-                        <div class="error-msg">
-                            <?= htmlspecialchars($error_message['kana']) ?></div>
-                    <?php endif ?>
+                    <div id="kana-error" class="error-msg2">
+                        <?php if (isset($error_message['kana'])) : ?>
+                            <?= htmlspecialchars($error_message['kana']) ?>
+                        <?php endif ?>
+                    </div>
                 </div>
                 <div>
                     <label>性別<span>必須</span></label>
@@ -159,7 +186,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     <label>生年月日<span>必須</span></label>
                     <!-- 年プルダウン -->
                     <div class="birth-selects">
-                        <select name="birth_year" class="form-control">
+                        <select name="birth_year" id="birth_year" class="form-control">
                             <option value="">年</option>
                             <?php
                             $currentYear = (int)date('Y');
@@ -173,7 +200,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                         </select>
 
                         <!-- 月プルダウン -->
-                        <select name="birth_month" class="form-control">
+                        <select name="birth_month" id="birth_month" class="form-control">
                             <option value="">月</option>
                             <?php
                             for ($m = 1; $m <= 12; $m++) :
@@ -186,7 +213,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                         </select>
 
                         <!-- 日プルダウン -->
-                        <select name="birth_day" class="form-control">
+                        <select name="birth_day" id="birth_day" class="form-control">
                             <option value="">日</option>
                             <?php
                             for ($d = 1; $d <= 31; $d++) :
@@ -198,10 +225,11 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                             <?php endfor ?>
                         </select>
                     </div>
-                    <?php if (isset($error_message['birth_date'])) : ?>
-                        <div class="error-msg2">
-                            <?= htmlspecialchars($error_message['birth_date']) ?></div>
-                    <?php endif ?>
+                    <div id="birth-error" class="error-msg2">
+                        <?php if (isset($error_message['birth_date'])) : ?>
+                            <?= htmlspecialchars($error_message['birth_date']) ?>
+                        <?php endif ?>
+                    </div>
                 </div>
                 <div>
                     <label>郵便番号<span>必須</span></label>
@@ -217,10 +245,11 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                             class="postal-code-search"
                             id="searchAddressBtn">住所検索</button>
                     </div>
-                    <?php if (isset($error_message['postal_code'])) : ?>
-                        <div class="error-msg2">
-                            <?= htmlspecialchars($error_message['postal_code']) ?></div>
-                    <?php endif ?>
+                    <div class="error-msg2" id="postal-error">
+                        <?php if (isset($error_message['postal_code'])) : ?>
+                            <?= htmlspecialchars($error_message['postal_code']) ?>
+                        <?php endif ?>
+                    </div>
                 </div>
                 <div>
                     <label>住所<span>必須</span></label>
@@ -239,36 +268,46 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     <input
                         type="text"
                         name="building"
+                        id="building"
                         placeholder="建物名・部屋番号  **省略可**"
                         value="<?= htmlspecialchars($old['building'] ?? '') ?>">
-                    <?php if (isset($error_message['address'])) : ?>
-                        <div class="error-msg">
-                            <?= htmlspecialchars($error_message['address']) ?></div>
-                    <?php endif ?>
+                    <!-- <div id="address-error" class="error-msg2"></div> -->
+                    <div>
+                        <p id="address-error" class="error-msg">
+                            <?= htmlspecialchars($error_message['address'] ?? '') ?>
+                        </p>
+                    </div>
+
                 </div>
                 <div>
                     <label>電話番号<span>必須</span></label>
                     <input
                         type="text"
                         name="tel"
+                        id="tel"
                         placeholder="例）000-0000-0000"
                         value="<?= htmlspecialchars($old['tel']) ?>">
-                    <?php if (isset($error_message['tel'])) : ?>
-                        <div class="error-msg">
-                            <?= htmlspecialchars($error_message['tel']) ?></div>
-                    <?php endif ?>
+                    <div>
+                        <p id="tel-error" class="error-msg">
+                            <?= htmlspecialchars($error_message['tel'] ?? '') ?>
+                        </p>
+                    </div>
+
                 </div>
                 <div>
                     <label>メールアドレス<span>必須</span></label>
                     <input
                         type="text"
                         name="email"
+                        id="email"
                         placeholder="例）guest@example.com"
                         value="<?= htmlspecialchars($old['email']) ?>">
-                    <?php if (isset($error_message['email'])) : ?>
-                        <div class="error-msg">
-                            <?= htmlspecialchars($error_message['email']) ?></div>
-                    <?php endif ?>
+                    <div>
+                        <p id="email-error" class="error-msg">
+                            <?= htmlspecialchars($error_message['email'] ?? '') ?>
+                        </p>
+                    </div>
+
                 </div>
                 <!-- パスワード入力欄 -->
                 <div>
@@ -276,41 +315,79 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     <input
                         type="password"
                         name="password"
+                        id="password"
                         placeholder="例）********"
                         value="<?= htmlspecialchars($old['password'] ?? '') ?>">
-                    <?php if (isset($error_message['password'])) : ?>
-                        <div class="error-msg">
-                            <?= htmlspecialchars($error_message['password']) ?>
+                    <div>
+                        <p id="password-error" class="error-msg">
+                            <?= htmlspecialchars($error_message['password'] ?? '') ?>
+                        </p>
+                    </div>
+
+
+                    <!-- 確認用パスワード入力欄 -->
+                    <div class=".password-confirm-group">
+                        <label>パスワード（確認）<span>必須</span></label>
+                        <input
+                            type="password"
+                            name="password_confirm"
+                            id="password_confirm"
+                            placeholder="もう一度入力してください"
+                            value="<?= htmlspecialchars($old['password_confirm'] ?? '') ?>">
+                        <div>
+                            <p id="password-confirm-error" class="error-msg">
+                                <?= htmlspecialchars($error_message['password_confirm'] ?? '') ?>
+                            </p>
                         </div>
-                    <?php endif ?>
+                    </div>
+                </div>
+                <div class="document-upload-section">
+                    <label>本人確認書類（表）</label>
+                    <input type="file" name="document1" id="document1" accept="image/png, image/jpeg, image/jpg">
+                    <div>
+                        <p id="document1-error" class="error-msg">
+                            <?= htmlspecialchars($errors['document1'] ?? '') ?>
+                        </p>
+                    </div>
+
+                    <!-- <span id="filename1" class="filename-display">
+                        <?= htmlspecialchars($file_names['document1'] ?? '') ?>
+                    </span> -->
+                    <div class="preview-container">
+                        <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px;">
+                    </div>
                 </div>
 
-                <!-- 確認用パスワード入力欄 -->
-                <div>
-                    <label>パスワード（確認）<span>必須</span></label>
-                    <input
-                        type="password"
-                        name="password_confirm"
-                        placeholder="もう一度入力してください"
-                        value="<?= htmlspecialchars($old['password_confirm'] ?? '') ?>">
-                    <?php if (isset($error_message['password_confirm'])) : ?>
-                        <div class="error-msg">
-                            <?= htmlspecialchars($error_message['password_confirm']) ?>
-                        </div>
-                    <?php endif ?>
+                <div class="file-input-wrapper">
+                    <label>本人確認書類（裏）</label>
+                    <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
+                    <div>
+                        <p id="document2-error" class="error-msg">
+                            <?= htmlspecialchars($errors['document2'] ?? '') ?>
+                        </p>
+                    </div>
+
+                    <!-- <span id="filename2" class="filename-display">
+                        <?= htmlspecialchars($file_names['document2'] ?? '') ?>
+                    </span> -->
+                    <div class="preview-container">
+                        <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
+                    </div>
                 </div>
 
-            </div>
 
-            <!-- ここに mode=create を追加 -->
-            <input type="hidden" name="mode" value="create">
 
-            <button type="submit">確認画面へ</button>
-            <a href="index.php">
-                <button type="button">TOPに戻る</button>
-            </a>
+                <!-- ここに mode=create を追加 -->
+                <input type="hidden" name="mode" value="create">
+
+                <button type="submit">確認画面へ</button>
+                <a href="index.php">
+                    <button type="button">TOPに戻る</button>
+                </a>
         </form>
     </div>
+    <!-- ここでJSを読み込む -->
+    <script src="validation.js"></script>
 </body>
 
 </html>

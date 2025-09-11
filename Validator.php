@@ -109,17 +109,21 @@ class Validator
             // 1. ユーザー入力
             $input_zip = $data['postal_code'];
             $clean_zip = str_replace("-", "", $input_zip); // "1234567"
+            $response = ['valid' => false];
+
 
             try {
                 // ここで再接続せず、$this->pdo を使ってクエリを実行
                 $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM address_master WHERE postal_code = :postal_code");
                 $stmt->execute([':postal_code' => $clean_zip]);
                 $count = $stmt->fetchColumn();
+                $response['valid'] = $count > 0;
 
                 if ($count == 0) {
                     $this->error_message['postal_code'] = "郵便番号が見つかりません";
                 }
             } catch (PDOException $e) {
+                $response['valid'] = false;
                 $this->error_message['postal_code'] = "郵便番号の確認中にエラーが発生しました";
             }
         }

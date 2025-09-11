@@ -3,105 +3,67 @@
 /**
  * 更新・削除画面
  *
- * ** 更新・削除画面は、ダッシュボード、更新・削除確認の2画面から遷移してきます
- * * **
- * ** 【説明】
- * **   更新・削除では、入力チェックと画面遷移をjavascriptで行います
- * **   そのため、登録の時とは違い、セッションを使用しないパターンのプログラムになります
- * **
- * ** 各画面毎の処理は以下です
- * ** 1.DB接続情報、クラス定義をそれぞれのファイルから読み込む
- * ** 2.DBからユーザ情報を取得する為、$_GETからID情報を取得する
- * ** 3.ユーザ情報を取得する
- * **   1.Userクラスをインスタスタンス化する
- * **     ＊User(設計図)に$user(実体)を付ける
- * **   2.メソッドを実行じユーザー情報を取得する
- * ** 4.html を描画
+ * ダッシュボードまたは確認画面から遷移
  */
 
 session_cache_limiter('none');
 session_start();
-// if (session_status() === PHP_SESSION_NONE) {
-//     session_cache_limiter('none');
-//     session_start();
-// }
 
-//1.DB接続情報、クラス定義の読み込み
+// 1. 必要ファイル読み込み
 require_once 'Db.php';
 require_once 'User.php';
 require_once 'Validator.php';
 
+// 遷移元をセッションで保持
 $_SESSION['source'] = 'edit';
 
-// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-//     var_dump($_POST);
-//     exit;
-// }
+// 2. GETからID取得
+$id = $_GET['id'] ?? null;
+if (!$id) {
+    die('IDが指定されていません');
+}
 
-// 2.変数の初期化
-// *$_POSTの値があるときは初期化しな
-// var_dump($_POST, $input, $old);
-$error_message = [];
-$old = $_POST ?? $originalData;
-$inputs = $old;
-
-// 2.ダッシュボードから送信した変数を設定
-// $id = $_GET['id'];
-$id = $_GET['id'];
-
-// 3-1.Userクラスをインスタンス化
+// 3. UserクラスでDBからユーザー情報を取得
 $user = new User($pdo);
-
-// 3-2.UserクラスのfindById()メソッドで1件検索
-// $_POST = $user->findById($id);
-// echo ($id);
 $originalData = $user->findById($id);
-// echo "バリデーション手前";
-// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-//     echo '<pre>';
-//     var_dump($_POST);
-//     var_dump($_FILES);
-//     echo '</pre>';
-//     exit;
-// }
+if (!$originalData) {
+    die('指定されたユーザーは存在しません');
+}
+
+// ========================
 // バリデーション処理
-// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-if (!empty($_POST)) {
+// ========================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = array_merge($_POST, $_FILES);
     $data['source'] = $_SESSION['source'] ?? '';
-    // var_dump($_SESSION['source']);
-    // echo "バリデーション開始";
+
     $validator = new Validator($pdo);
 
     if ($validator->validate($data)) {
-        // echo "バリデーション成功";
-
+        // バリデーション成功時
         $_SESSION['input_data'] = $_POST;
-        // $_SESSION['files'] = $_FILES;
 
+        // アップロードファイルをセッションに保存
         if (!empty($_FILES['document1']['tmp_name'])) {
             $_SESSION['files']['document1'] = $_FILES['document1'];
         }
         if (!empty($_FILES['document2']['tmp_name'])) {
             $_SESSION['files']['document2'] = $_FILES['document2'];
         }
-        // 表示用ファイル名も保存
+
+        // 表示用のファイル名も保存
         $_SESSION['file_names'] = [
             'document1' => $_FILES['document1']['name'] ?? ($_SESSION['file_names']['document1'] ?? ''),
             'document2' => $_FILES['document2']['name'] ?? ($_SESSION['file_names']['document2'] ?? ''),
         ];
 
-
-        // echo "edit.php";
-        // var_dump($_SESSION['source']);
-        // var_dump($_POST);
-
-        // ▼ここに追加
+        // 一時アップロードディレクトリ作成
         $tmpDir = __DIR__ . '/tmp_uploads/';
         if (!file_exists($tmpDir)) {
             mkdir($tmpDir, 0777, true);
         }
 
+        // ファイル移動
         $files = [];
         foreach (['document1', 'document2'] as $key) {
             if (!empty($_FILES[$key]['tmp_name']) && is_uploaded_file($_FILES[$key]['tmp_name'])) {
@@ -112,18 +74,12 @@ if (!empty($_POST)) {
             }
         }
         $_SESSION['files'] = $files;
-        // ▲ここまで追加
 
-
-        // ← ここに追加
-        // include 'update.php';
+        // 確認画面へ
         header('Location: confirm.php');
-        // include 'confirm.php';
-        // header('Location: confirm.php?id=' . urlencode($id));
         exit();
     } else {
-        echo "バリデーション失敗";
-
+        // バリデーション失敗
         $_SESSION['errors'] = $validator->getErrors();
         $_SESSION['inputs'] = $data;
 
@@ -131,24 +87,32 @@ if (!empty($_POST)) {
             'document1' => $_FILES['document1']['name'] ?? '',
             'document2' => $_FILES['document2']['name'] ?? '',
         ];
-        // var_dump($validator->getErrors());
-        // exit();
 
+        // 自画面に戻る
         header('Location: edit.php?id=' . urlencode($id));
         exit();
     }
 }
-// バリデーション失敗時の入力データとエラー取得
+
+// ========================
+// 表示用データの選択
+// ========================
+// confirm.phpから戻ってきた場合はセッション優先
+if (!empty($_SESSION['input_data'])) {
+    $inputs = $_SESSION['input_data'];
+} elseif (!empty($_SESSION['inputs'])) {
+    $inputs = $_SESSION['inputs'];
+} else {
+    $inputs = $originalData;
+}
+
 $errors = $_SESSION['errors'] ?? [];
-$inputs = $_SESSION['inputs'] ?? $originalData;
 $file_names = $_SESSION['file_names'] ?? [];
-// ファイル名だけ保存
 
+// 一度使ったら削除
+unset($_SESSION['errors'], $_SESSION['inputs']);
 
-// 一度使ったらクリア
-// unset($_SESSION['errors'], $_SESSION['inputs']);
-// 4.html の描画
-
+// ここからHTMLを描画
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -193,18 +157,21 @@ $file_names = $_SESSION['file_names'] ?? [];
             <div>
                 <div>
                     <label>お名前<span>必須</span></label>
-                    <input type="text" name="name" placeholder="例）山田太郎" value="<?= htmlspecialchars($inputs['name']) ?>">
-                    <?php if (isset($errors['name'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['name']) ?></div>
-                    <?php endif ?>
+                    <input type="text" name="name" id="name" placeholder="例）山田太郎" value="<?= htmlspecialchars($inputs['name']) ?>">
+                    <div>
+                        <p id="name-error" class="error-msg">
+                            <?= htmlspecialchars($errors['name'] ?? '') ?>
+                        </p>
+                    </div>
                 </div>
-
                 <div>
                     <label>ふりがな<span>必須</span></label>
-                    <input type="text" name="kana" placeholder="例）やまだたろう" value="<?= htmlspecialchars($inputs['kana']) ?>">
-                    <?php if (isset($errors['kana'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['kana']) ?></div>
-                    <?php endif ?>
+                    <input type="text" name="kana" id="kana" placeholder="例）やまだたろう" value="<?= htmlspecialchars($inputs['kana']) ?>">
+                    <div>
+                        <p id="kana-error" class="error-msg">
+                            <?= htmlspecialchars($errors['kana'] ?? '') ?>
+                        </p>
+                    </div>
                 </div>
 
                 <div>
@@ -234,43 +201,55 @@ $file_names = $_SESSION['file_names'] ?? [];
                         <input class="half-width" type="text" name="postal_code" id="postal_code" placeholder="例）100-0001" value="<?= htmlspecialchars($inputs['postal_code'] ?? '') ?>">
                         <button type="button" class="postal-code-search" id="searchAddressBtn">住所検索</button>
                     </div>
-                    <?php if (isset($errors['postal_code'])) : ?>
-                        <div class="error-msg2"><?= htmlspecialchars($errors['postal_code']) ?></div>
-                    <?php endif ?>
+                    <div>
+                        <p id="postal-error" class="error-msg2">
+                            <?= htmlspecialchars($errors['postal_code'] ?? '') ?>
+                        </p>
+                    </div>
+
                 </div>
 
                 <div>
                     <label>住所<span>必須</span></label>
                     <input type="text" name="prefecture" id="prefecture" placeholder="都道府県" value="<?= htmlspecialchars($inputs['prefecture'] ?? '') ?>">
                     <input type="text" name="city_town" id="city_town" placeholder="市区町村・番地" value="<?= htmlspecialchars($inputs['city_town'] ?? '') ?>">
-                    <input type="text" name="building" placeholder="建物名・部屋番号  **省略可**" value="<?= htmlspecialchars($inputs['building'] ?? '') ?>">
-                    <?php if (isset($errors['address'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['address']) ?></div>
-                    <?php endif ?>
+                    <input type="text" name="building" id="building" placeholder="建物名・部屋番号  **省略可**" value="<?= htmlspecialchars($inputs['building'] ?? '') ?>">
+                    <div>
+                        <p id="address-error" class="error-msg">
+                            <?= htmlspecialchars($errors['address'] ?? '') ?>
+                        </p>
+                    </div>
                 </div>
 
                 <div>
                     <label>電話番号<span>必須</span></label>
-                    <input type="text" name="tel" placeholder="例）000-000-0000" value="<?= htmlspecialchars($inputs['tel']) ?>">
-                    <?php if (isset($errors['tel'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['tel']) ?></div>
-                    <?php endif ?>
+                    <input type="text" name="tel" id="tel" placeholder="例）000-000-0000" value="<?= htmlspecialchars($inputs['tel']) ?>">
+                    <div>
+                        <p id="tel-error" class="error-msg">
+                            <?= htmlspecialchars($errors['tel'] ?? '') ?>
+                        </p>
+                    </div>
                 </div>
 
                 <div>
                     <label>メールアドレス<span>必須</span></label>
-                    <input type="text" name="email" placeholder="例）guest@example.com" value="<?= htmlspecialchars($inputs['email']) ?>">
-                    <?php if (isset($errors['email'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['email']) ?></div>
-                    <?php endif ?>
+                    <input type="text" name="email" id="email" placeholder="例）guest@example.com" value="<?= htmlspecialchars($inputs['email']) ?>">
+                    <div>
+                        <p id="email-error" class="error-msg">
+                            <?= htmlspecialchars($errors['email'] ?? '') ?>
+                        </p>
+                    </div>
+
                 </div>
 
                 <div>
                     <label>本人確認書類（表）</label>
                     <input type="file" name="document1" id="document1" accept="image/png, image/jpeg, image/jpg">
-                    <?php if (isset($errors['document1'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['document1']) ?></div>
-                    <?php endif ?>
+                    <div>
+                        <p id="document1-error" class="error-msg">
+                            <?= htmlspecialchars($errors['document1'] ?? '') ?>
+                        </p>
+                    </div>
 
                     <!-- <span id="filename1" class="filename-display">
                         <?= htmlspecialchars($file_names['document1'] ?? '') ?>
@@ -283,9 +262,11 @@ $file_names = $_SESSION['file_names'] ?? [];
                 <div>
                     <label>本人確認書類（裏）</label>
                     <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
-                    <?php if (isset($errors['document2'])) : ?>
-                        <div class="error-msg"><?= htmlspecialchars($errors['document2']) ?></div>
-                    <?php endif ?>
+                    <div>
+                        <p id="document2-error" class="error-msg">
+                            <?= htmlspecialchars($errors['document2'] ?? '') ?>
+                        </p>
+                    </div>
 
                     <!-- <span id="filename2" class="filename-display">
                         <?= htmlspecialchars($file_names['document2'] ?? '') ?>
@@ -373,6 +354,9 @@ $file_names = $_SESSION['file_names'] ?? [];
             });
         </script>
     </div>
+
+    <!-- ここでJSを読み込む -->
+    <script src="validation.js"></script>
 </body>
 
 

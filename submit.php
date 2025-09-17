@@ -82,13 +82,18 @@ try {
         $blobInputs['document2'] ?? null
     );
 
+    $frontName = $_SESSION['file_names']['document1'] ?? null;
+    $backName  = $_SESSION['file_names']['document2'] ?? null;
+
     if ($blobs !== null) {
         $expiresAt = null;
         $user->saveDocument(
             $userId,
             $blobs['front'],
             $blobs['back'],
-            $expiresAt
+            $expiresAt,
+            $frontName,
+            $backName
         );
     }
 

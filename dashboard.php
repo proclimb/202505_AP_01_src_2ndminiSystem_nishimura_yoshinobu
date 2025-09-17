@@ -260,22 +260,21 @@ function calculateAge($birthDate)
                         <!-- user の場合は非表示 -->
                     <?php endif; ?>
                     <!-- 追加した出力部分：書類①(front_image) -->
-                    <td><?php if ((int)$val['has_front'] === 1): ?>
-                            <a
-                                class="dl-link"
-                                href="Showdocument.php?user_id=<?= urlencode($val['id']) ?>&type=front"
-                                target="_blank">DL</a>
+                    <!-- 書類①（front） -->
+                    <td>
+                        <?php if ((int)$val['has_front'] === 1): ?>
+                            <a href="Showdocument.php?user_id=<?= urlencode($val['id']) ?>&type=front" target="_blank">
+                                <?= htmlspecialchars($val['front_image_name'], ENT_QUOTES) ?>
+                            </a>
                         <?php else: ?>
                             無し
                         <?php endif; ?>
                     </td>
-                    <!-- 追加した出力部分：書類②(back_image) -->
                     <td>
                         <?php if ((int)$val['has_back'] === 1): ?>
-                            <a
-                                class="dl-link"
-                                href="Showdocument.php?user_id=<?= urlencode($val['id']) ?>&type=back"
-                                target="_blank">DL</a>
+                            <a href="Showdocument.php?user_id=<?= urlencode($val['id']) ?>&type=back" target="_blank">
+                                <?= htmlspecialchars($val['back_image_name'], ENT_QUOTES) ?>
+                            </a>
                         <?php else: ?>
                             無し
                         <?php endif; ?>
@@ -289,12 +288,12 @@ function calculateAge($birthDate)
     <?= paginationLinks($page, $totalPages, $keyword, $sortBy, $sortOrd, $column, $ageMin, $ageMax) ?>
 
     <!-- 8. 「TOPに戻る」ボタン -->
-    <a href="index.php">
-        <button type="button">TOPに戻る</button>
-    </a>
-    <a href="logout.php">
-        <button type="button">ログアウト</button>
-    </a>
+    <!-- TOPに戻るボタン -->
+    <button type="button" onclick="location.href='index.php'">TOPに戻る</button>
+
+    <!-- ログアウトボタン -->
+    <button type="button" onclick="location.href='logout.php'">ログアウト</button>
+
 </body>
 
 </html>

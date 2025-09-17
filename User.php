@@ -85,9 +85,25 @@ class User
                 a.postal_code,
                 a.prefecture,
                 a.city_town,
-                a.building
+                a.building,
+                ud.front_image,
+                ud.front_image_name,
+                ud.back_image,
+                ud.back_image_name,
+                (ud.front_image IS NOT NULL) AS has_front,
+                (ud.back_image  IS NOT NULL) AS has_back
             FROM user_base u
             LEFT JOIN user_addresses a ON u.id = a.user_id
+            LEFT JOIN (
+                SELECT ud2.user_id, ud2.front_image, ud2.front_image_name, ud2.back_image, ud2.back_image_name
+                FROM user_documents ud2
+                INNER JOIN (
+                    SELECT user_id, MAX(created_at) AS max_created
+                    FROM user_documents
+                    GROUP BY user_id
+                ) AS latest
+                ON ud2.user_id = latest.user_id AND ud2.created_at = latest.max_created
+            ) AS ud ON u.id = ud.user_id
             WHERE u.id = ?";
 
         $stmt = $this->pdo->prepare($sql);
@@ -273,7 +289,10 @@ class User
                     a.city_town,
                     a.building,
                     (ud.front_image IS NOT NULL) AS has_front,
-                    (ud.back_image  IS NOT NULL) AS has_back
+                    (ud.back_image  IS NOT NULL) AS has_back,
+                    ud.front_image_name,
+                    ud.back_image_name
+
                 FROM user_base u
                 LEFT JOIN user_addresses a
                   ON u.id = a.user_id
@@ -281,7 +300,9 @@ class User
                     SELECT
                         ud2.user_id,
                         ud2.front_image,
-                        ud2.back_image
+                        ud2.back_image,
+                        ud2.front_image_name,   -- 追加
+                        ud2.back_image_name     -- 追加
                       FROM user_documents AS ud2
                      INNER JOIN (
                          SELECT
@@ -382,20 +403,24 @@ class User
     }
 
     // ユーザドキュメント処理
-    public function saveDocument($id, $frontBlob, $backBlob, ?string $expiresAt)
+    public function saveDocument($id, $frontBlob, $backBlob, ?string $expiresAt, ?string $frontImageName = null, ?string $backImageName = null)
     {
         $sql = "INSERT INTO
                     user_documents
                         (
                         user_id,
                         front_image,
+                        front_image_name,
                         back_image,
+                        back_image_name,
                         expires_at,
                         created_at)
                 VALUES(
                     :user_id,
                     :front_image,
+                    :front_image_name,
                     :back_image,
+                    :back_image_name,
                     :expires_at,
                     NOW()
                     )";
@@ -403,6 +428,18 @@ class User
         $stmt->bindParam(':user_id', $id, PDO::PARAM_INT);
         $stmt->bindParam(':front_image', $frontBlob, PDO::PARAM_LOB);
         $stmt->bindParam(':back_image',  $backBlob,  PDO::PARAM_LOB);
+
+        // ファイル名（NULL対応）
+        if ($frontImageName === null) {
+            $stmt->bindValue(':front_image_name', null, PDO::PARAM_NULL);
+        } else {
+            $stmt->bindValue(':front_image_name', $frontImageName, PDO::PARAM_STR);
+        }
+        if ($backImageName === null) {
+            $stmt->bindValue(':back_image_name', null, PDO::PARAM_NULL);
+        } else {
+            $stmt->bindValue(':back_image_name', $backImageName, PDO::PARAM_STR);
+        }
 
         if ($expiresAt === null) {
             $stmt->bindValue(':expires_at', null, PDO::PARAM_NULL);

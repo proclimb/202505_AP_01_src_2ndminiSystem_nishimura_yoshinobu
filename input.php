@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['source'] = 'input';
 
             // 一時アップロード先
-            $tmpDir = __DIR__ . '/tmp_upload/';
+            $tmpDir = __DIR__ . '/tmp_uploads/';
             if (!file_exists($tmpDir)) mkdir($tmpDir, 0777, true);
 
             // アップロードファイルの処理

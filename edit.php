@@ -56,7 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'document1' => $_FILES['document1']['name'] ?? ($_SESSION['file_names']['document1'] ?? ''),
             'document2' => $_FILES['document2']['name'] ?? ($_SESSION['file_names']['document2'] ?? ''),
         ];
-
+        // echo ("DB name");
+        // var_dump($_SESSION['file_names']);
         // 一時アップロードディレクトリ作成
         $tmpDir = __DIR__ . '/tmp_uploads/';
         if (!file_exists($tmpDir)) {
@@ -74,6 +75,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         $_SESSION['files'] = $files;
+        // --- 表画像(document1)のSESSION設定 ---
+
+        // 新規ファイルが選択されているか確認
+        // 表画像アップロード処理
+        if (!empty($_FILES['document1']['tmp_name']) && is_uploaded_file($_FILES['document1']['tmp_name'])) {
+            $ext = pathinfo($_FILES['document1']['name'], PATHINFO_EXTENSION);
+            $newPath = $tmpDir . uniqid() . '.' . $ext;
+            move_uploaded_file($_FILES['document1']['tmp_name'], $newPath);
+
+            // セッションに保存
+            $_SESSION['files']['document1'] = $newPath;              // フルパス（表示用）
+            $_SESSION['file_names']['document1'] = $_FILES['document1']['name']; // 元のファイル名（表示用）
+        }
+        // DBに画像がある場合は別セッションで保持
+        if (!empty($originalData['front_image_name'])) {
+            $_SESSION['db_files']['document1'] = 'Showdocument.php?user_id=' . $id . '&type=front';
+            $_SESSION['db_file_names']['document1'] = $originalData['front_image_name'];
+        } else {
+            $_SESSION['db_files']['document1'] = '';
+            $_SESSION['db_file_names']['document1'] = '';
+        }
+
+        // --- 裏画像(document2)のSESSION設定 ---
+
+        // 新規ファイルが選択されているか確認
+        // 裏画像アップロード処理
+        if (!empty($_FILES['document2']['tmp_name']) && is_uploaded_file($_FILES['document2']['tmp_name'])) {
+            $ext = pathinfo($_FILES['document2']['name'], PATHINFO_EXTENSION);
+            $newPath = $tmpDir . uniqid() . '.' . $ext;
+            move_uploaded_file($_FILES['document2']['tmp_name'], $newPath);
+
+            // セッションに保存
+            $_SESSION['files']['document2'] = $newPath;              // フルパス（表示用）
+            $_SESSION['file_names']['document2'] = $_FILES['document2']['name']; // 元のファイル名（表示用）
+        }
+
+        // DBに画像がある場合は別セッションで保持
+        if (!empty($originalData['back_image_name'])) {
+            $_SESSION['db_files']['document2'] = 'Showdocument.php?user_id=' . $id . '&type=back';
+            $_SESSION['db_file_names']['document2'] = $originalData['back_image_name'];
+        } else {
+            $_SESSION['db_files']['document2'] = '';
+            $_SESSION['db_file_names']['document2'] = '';
+        }
+        $_SESSION['delete_flags']['front'] = $_POST['delete_front'] ?? 0;
+        $_SESSION['delete_flags']['back']  = $_POST['delete_back']  ?? 0;
+
 
         // 確認画面へ
         header('Location: confirm.php');
@@ -87,7 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'document1' => $_FILES['document1']['name'] ?? '',
             'document2' => $_FILES['document2']['name'] ?? '',
         ];
-
         // 自画面に戻る
         header('Location: edit.php?id=' . urlencode($id));
         exit();
@@ -105,12 +152,28 @@ if (!empty($_SESSION['input_data'])) {
 } else {
     $inputs = $originalData;
 }
+// ↓ ここに挿入
+// $frontFilename = $originalData['front_filename'] ?? '';
+// $backFilename  = $originalData['back_filename'] ?? '';
+
+// DB の名前を優先して取得
+$file_names = [
+    'document1' => $originalData['front_image_name'] ?? '',
+    'document2' => $originalData['back_image_name'] ?? '',
+];
+
+// var_dump($file_names);
+// exit;
 
 $errors = $_SESSION['errors'] ?? [];
-$file_names = $_SESSION['file_names'] ?? [];
+// $file_names = $_SESSION['file_names'] ?? [];
 
 // 一度使ったら削除
-unset($_SESSION['errors'], $_SESSION['inputs']);
+// unset($_SESSION['errors'], $_SESSION['inputs']);
+// DBから取得したファイル名をセッションにセット
+// $_SESSION['file_names']['document1'] = $originalData['front_image_name'] ?? '';
+// $_SESSION['file_names']['document2'] = $originalData['back_image_name'] ?? '';
+
 
 // ここからHTMLを描画
 ?>
@@ -124,7 +187,6 @@ unset($_SESSION['errors'], $_SESSION['inputs']);
     <script src="postalcodesearch.js"></script>
     <!-- <script src="contact.js"></script> -->
 </head>
-<!-- <?php var_dump($inputs); ?> -->
 
 <body>
     <div>
@@ -241,43 +303,132 @@ unset($_SESSION['errors'], $_SESSION['inputs']);
                     </div>
 
                 </div>
-
+                <!-- 表画像 -->
                 <div>
                     <label>本人確認書類（表）</label>
-                    <input type="file" name="document1" id="document1" accept="image/png, image/jpeg, image/jpg">
-                    <div>
-                        <p id="document1-error" class="error-msg">
-                            <?= htmlspecialchars($errors['document1'] ?? '') ?>
-                        </p>
-                    </div>
 
-                    <!-- <span id="filename1" class="filename-display">
-                        <?= htmlspecialchars($file_names['document1'] ?? '') ?>
-                    </span> -->
+                    <!-- ファイル選択 -->
+                    <input type="file" name="document1" id="document1" accept="image/png, image/jpeg, image/jpg">
+
+                    <p id="document1-error" class="error-msg">
+                        <?= htmlspecialchars($errors['document1'] ?? '') ?>
+                    </p>
+
                     <div class="preview-container">
-                        <img id="preview1" src="#" alt="プレビュー画像１" style="display: none; max-width: 200px; margin-top: 8px;">
+                        <?php if (!empty($file_names['document1'])): ?>
+                            <img id="preview1"
+                                src="Showdocument.php?user_id=<?= $id ?>&type=front"
+                                alt="表画像"
+                                style="max-width:200px; display:block; margin:0 auto;">
+
+                            <!-- 削除チェックボックス -->
+                            <div class="delete-checkbox-container">
+                                <label>
+                                    <input type="checkbox" name="delete_front" id="delete_front" value="1">
+                                    この画像を削除する
+                                </label>
+                            </div>
+                        <?php else: ?>
+                            <p style="margin:0;">画像は登録されていません</p>
+                        <?php endif; ?>
                     </div>
                 </div>
 
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const fileInput = document.getElementById('document1');
+                        const deleteCheckbox = document.getElementById('delete_front');
+
+                        if (deleteCheckbox) {
+                            // 削除チェックされたらファイル選択を無効化
+                            deleteCheckbox.addEventListener('change', function() {
+                                if (this.checked) {
+                                    fileInput.value = ''; // 選択中のファイルをクリア
+                                    fileInput.disabled = true;
+                                } else {
+                                    fileInput.disabled = false;
+                                }
+                            });
+                        }
+
+                        if (fileInput) {
+                            // ファイル選択されたら削除チェックを無効化
+                            fileInput.addEventListener('change', function() {
+                                if (this.files.length > 0 && deleteCheckbox) {
+                                    deleteCheckbox.checked = false;
+                                    deleteCheckbox.disabled = true;
+                                } else if (deleteCheckbox) {
+                                    deleteCheckbox.disabled = false;
+                                }
+                            });
+                        }
+                    });
+                </script>
+
+                <!-- 裏画像 -->
                 <div>
                     <label>本人確認書類（裏）</label>
-                    <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
-                    <div>
-                        <p id="document2-error" class="error-msg">
-                            <?= htmlspecialchars($errors['document2'] ?? '') ?>
-                        </p>
-                    </div>
 
-                    <!-- <span id="filename2" class="filename-display">
-                        <?= htmlspecialchars($file_names['document2'] ?? '') ?>
-                    </span> -->
+                    <!-- ファイル選択 -->
+                    <input type="file" name="document2" id="document2" accept="image/png, image/jpeg, image/jpg">
+
+                    <p id="document2-error" class="error-msg">
+                        <?= htmlspecialchars($errors['document2'] ?? '') ?>
+                    </p>
+
                     <div class="preview-container">
-                        <img id="preview2" src="#" alt="プレビュー画像２" style="display: none; max-width: 200px; margin-top: 8px;">
+                        <?php if (!empty($file_names['document2'])): ?>
+                            <img id="preview2"
+                                src="Showdocument.php?user_id=<?= $id ?>&type=back"
+                                alt="裏画像"
+                                style="max-width:200px; display:block; margin:0 auto;">
+
+                            <!-- 削除チェックボックス -->
+                            <div class="delete-checkbox-container">
+                                <label>
+                                    <input type="checkbox" name="delete_back" id="delete_back" value="1">
+                                    この画像を削除する
+                                </label>
+                            </div>
+                        <?php else: ?>
+                            <p style="margin:0;">画像は登録されていません</p>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <button type="submit">更新</button>
-                <input type="button" value="ダッシュボードに戻る" onclick="location.href='dashboard.php'">
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const fileInputBack = document.getElementById('document2');
+                        const deleteCheckboxBack = document.getElementById('delete_back');
+
+                        if (deleteCheckboxBack) {
+                            // 削除チェックされたらファイル選択を無効化
+                            deleteCheckboxBack.addEventListener('change', function() {
+                                if (this.checked) {
+                                    fileInputBack.value = ''; // 選択中のファイルをクリア
+                                    fileInputBack.disabled = true;
+                                } else {
+                                    fileInputBack.disabled = false;
+                                }
+                            });
+                        }
+
+                        if (fileInputBack) {
+                            // ファイル選択されたら削除チェックを無効化
+                            fileInputBack.addEventListener('change', function() {
+                                if (this.files.length > 0 && deleteCheckboxBack) {
+                                    deleteCheckboxBack.checked = false;
+                                    deleteCheckboxBack.disabled = true;
+                                } else if (deleteCheckboxBack) {
+                                    deleteCheckboxBack.disabled = false;
+                                }
+                            });
+                        }
+                    });
+                </script>
+            </div>
+            <button type="submit">更新</button>
+            <input type="button" value="ダッシュボードに戻る" onclick="location.href='dashboard.php'">
         </form>
 
         <form action="delete.php" method="post" name="delete">
@@ -362,7 +513,7 @@ unset($_SESSION['errors'], $_SESSION['inputs']);
 
 <?php
 // unset($_SESSION['errors'], $_SESSION['inputs']);
-unset($_SESSION['errors'], $_SESSION['inputs'], $_SESSION['file_names']);
+unset($_SESSION['errors'], $_SESSION['inputs']);
 ?>
 
 </html>

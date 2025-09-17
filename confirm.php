@@ -24,6 +24,28 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+/* ============================
+   デバッグ用：画像・入力データ確認
+   ============================ */
+// デバッグ用：セッションとIDの確認
+// echo "<pre>=== SESSION 入力データ ===\n";
+// var_dump($_SESSION['input_data'] ?? []);
+$id = $_SESSION['input_data']['id'];
+// echo "\n=== SESSION ファイルパス ===\n";
+// var_dump($_SESSION['files'] ?? []);
+// echo "\n=== SESSION ファイル名 ===\n";
+// echo '<pre>';
+// var_dump($_SESSION['files']['document1']);   // 新しいファイル
+// var_dump($_SESSION['file_names']['document1']); // ファイル名
+// var_dump($_SESSION['db_files']['document1'] ?? null); // DBからの画像パス（あれば）
+// echo '</pre>';
+
+
+// exit; // デバッグ用にここで止める
+// ============================
+// ここまでデバッグ用
+// ============================
+
 $data = $_SESSION['input_data'] ?? [];
 $source = $_SESSION['source'] ?? 'input'; // デフォルトは input
 
@@ -63,33 +85,10 @@ foreach (['document1', 'document2'] as $doc) {
 $mode = $_POST['mode'] ?? 'create';
 $actionUrl = $mode === 'edit' ? 'update.php' : 'submit.php';
 
-// // $_SESSION に入力データがあるか確認
-// if (!isset($_SESSION['input_data']) || empty($_SESSION['input_data'])) {
-//     // 登録画面へ戻す
-//     $redirect = $_SESSION['source'] ?? 'input';
-//     header('Location:' . ($redirect === 'edit' ? 'edit.php' : 'input.php'));
-//     exit();
-// }
+// confirm.php の冒頭、HTML開始直前
+$imgSrc = null;
+$fileName = '';
 
-
-// // 1-1.$_SESSIONに登録画面の入力情報があるか確認
-// if (!isset($_SESSION['input_data'])) {
-//     // $_SESSIONの値が空だったら、登録画面へ遷移する
-//     header('Location:input.php');
-//     exit();
-// }
-
-// // 1-2.セッションから登録画面の入力情報を$_POSTへコピーする
-// $_POST = $_SESSION['input_data'];
-
-// $mode = $_POST['mode'] ?? 'create';
-
-// // ここで送信先の切り替えを追加
-// $actionUrl = ($_POST['mode'] ?? 'create') === 'edit' ? 'update.php' : 'submit.php';
-
-
-// 2.セッションを破棄する
-// session_destroy();
 
 // 3.htmlの描画
 ?>
@@ -111,7 +110,7 @@ $actionUrl = $mode === 'edit' ? 'update.php' : 'submit.php';
     </div>
     <div>
         <!-- <form action="submit.php" method="post"> -->
-        <form action="<?= htmlspecialchars($actionUrl) ?>" method="post">
+        <form action="<?= htmlspecialchars($actionUrl) ?>" method="post" enctype="multipart/form-data">
 
             <!-- mode を引き継ぐ -->
             <input type="hidden" name="mode" value="<?= htmlspecialchars($_SESSION['input_data']['mode'] ?? 'create') ?>">
@@ -221,20 +220,101 @@ $actionUrl = $mode === 'edit' ? 'update.php' : 'submit.php';
                         <p><?= str_repeat('●', strlen($_POST['password_confirm'] ?? '')) ?></p>
                     </div> <?php elseif ($source === 'edit'): ?>
                 <?php endif; ?>
+                <!-- <?php $file_names['document1'] = $_SESSION['file_names']['document1']; ?> -->
+                <!-- <?php var_dump($id); ?> -->
 
-                <?php if (!empty($_SESSION['file_names']['document1'])): ?>
-                    <div>
-                        <label>本人確認書類（表）</label>
-                        <p><?= htmlspecialchars($_SESSION['file_names']['document1']) ?></p>
-                    </div>
-                <?php endif; ?>
+                <!-- 本人確認書類（表）表示 -->
+                <div class="preview-container" style="text-align:center;">
+                    <label>本人確認書類（表）</label>
+                    <p id="document1-error" class="error-msg">
+                        <?= htmlspecialchars($errors['document1'] ?? '') ?>
+                    </p>
 
-                <?php if (!empty($_SESSION['file_names']['document2'])): ?>
-                    <div>
-                        <label>本人確認書類（裏）</label>
-                        <p><?= htmlspecialchars($_SESSION['file_names']['document2']) ?></p>
-                    </div>
-                <?php endif; ?>
+                    <?php
+                    $newFile = !empty($_SESSION['files']['document1']);
+                    $dbFile  = !empty($_SESSION['db_files']['document1']);
+                    ?>
+
+                    <?php if (!$newFile && !$dbFile): ?>
+                        <p>画像は登録されていません</p>
+                    <?php endif; ?>
+
+                    <?php $deleteFront = $_SESSION['delete_flags']['front'] ?? 0; ?>
+
+                    <?php if ($newFile): ?>
+                        <!-- 新しいファイル -->
+                        <br> <!-- ← 改行を明示的に追加 -->
+                        <div style="margin-bottom:10px; text-align:center;">
+                            <p style="margin:0; font-weight:bold;">新しいファイル</p>
+                            <img src="/202505_AP_01_src_2ndminiSystem_nishimura_yoshinobu/tmp_uploads/<?= basename($_SESSION['files']['document1']) ?>"
+                                alt="アップロード画像" style="max-width:200px; display:block; margin:0 auto;">
+                            <span style="display:block; text-align:center; font-size:14px; margin-top:4px;">
+                                <?= htmlspecialchars($_SESSION['file_names']['document1']) ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($dbFile): ?>
+                        <br> <!-- 改行を明示的に追加 -->
+                        <!-- DBからの画像 -->
+                        <div>
+                            <p style="margin:0; font-weight:bold;">DBの画像</p>
+                            <img src="<?= $_SESSION['db_files']['document1'] ?>"
+                                alt="DB画像" style="max-width:200px; display:block; margin:0 auto;">
+                            <span><?= htmlspecialchars($_SESSION['db_file_names']['document1']) ?></span>
+                            <?php if ($deleteFront): ?>
+                                <p style="color:red; font-weight:bold; margin-top:4px;">削除予定</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <?php
+                // 裏画像の状態チェック
+                $newFileBack = !empty($_SESSION['files']['document2']);      // 新しい裏画像があるか
+                $dbFileBack  = !empty($_SESSION['db_files']['document2']);  // DBに裏画像があるか
+                $deleteBack = $_SESSION['delete_flags']['back'] ?? 0;
+                ?>
+
+                <div class="preview-container" style="text-align:center;">
+                    <label>本人確認書類（裏）</label>
+                    <p id="document2-error" class="error-msg">
+                        <?= htmlspecialchars($errors['document2'] ?? '') ?>
+                    </p>
+
+                    <?php if (!$newFileBack && !$dbFileBack): ?>
+                        <p>裏画像は登録されていません</p>
+                    <?php endif; ?>
+                    <?php $deleteBack  = $_SESSION['delete_flags']['back'] ?? 0; ?>
+                    <?php if ($newFileBack): ?>
+                        <!-- 新しい裏画像 -->
+                        <br> <!-- 改行を明示的に追加 -->
+                        <div style="margin-bottom:10px; text-align:center;">
+                            <p style="margin:0; font-weight:bold;">新しい裏画像</p>
+                            <img src="/202505_AP_01_src_2ndminiSystem_nishimura_yoshinobu/tmp_uploads/<?= basename($_SESSION['files']['document2']) ?>"
+                                alt="アップロード裏画像" style="max-width:200px; display:block; margin:0 auto;">
+                            <span style="display:block; text-align:center; font-size:14px; margin-top:4px;">
+                                <?= htmlspecialchars($_SESSION['file_names']['document2']) ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($dbFileBack): ?>
+                        <!-- DBからの裏画像 -->
+                        <br> <!-- 改行を明示的に追加 -->
+                        <div style="margin-bottom:10px; text-align:center;">
+                            <p style="margin:0; font-weight:bold;">DB裏画像</p>
+                            <img src="<?= $_SESSION['db_files']['document2'] ?>"
+                                alt="DB裏画像" style="max-width:200px; display:block; margin:0 auto;">
+                            <span style="display:block; text-align:center; font-size:14px; margin-top:4px;">
+                                <?= htmlspecialchars($_SESSION['db_file_names']['document2']) ?>
+                            </span>
+                            <?php if ($deleteBack): ?>
+                                <p style="color:red; font-weight:bold; margin-top:4px;">削除予定</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
             <?php
             // 編集か新規か判定

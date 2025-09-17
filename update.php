@@ -121,28 +121,72 @@ try {
         $blobInputs['document2'] ?? null
     );
 
+    // 追加：削除フラグを取得
+    $deleteFront = $_SESSION['delete_flags']['front'] ?? 0;
+    $deleteBack  = $_SESSION['delete_flags']['back'] ?? 0;
 
-    // $blobs = FileBlobHelper::getMultipleBlobs(
-    //     $files['document1'] ?? null,  // ← $_FILES → $files に変更
-    //     $files['document2'] ?? null
-    // );
 
-    // var_dump($files['document1']);
-    // var_dump($files);
-    // var_dump($blobs);
-    // 7. BLOB が null でなければ（いずれかアップロードされたなら）user_documents に登録
-    if ($blobs !== null) {
-        // expires_at を NULL にして「保存期限なし」を実現
-        $expiresAt = null;
+    $expiresAt = null;
+    $frontName = $_SESSION['file_names']['document1'] ?? '';
+    $backName  = $_SESSION['file_names']['document2'] ?? '';
 
-        // User::saveDocument() を使って INSERT
-        // ※ メソッド定義では expires_at が nullable なので null を渡す
-        $user->saveDocument(
-            $id,
-            $blobs['front'],  // image(表)
-            $blobs['back'],   // image(裏)
-            $expiresAt
-        );
+    // レコードがあるか確認
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM user_documents WHERE user_id = ?");
+    $stmt->execute([$id]);
+    $exists = $stmt->fetchColumn();
+
+    if ($exists > 0) {
+        // 🔹 UPDATE
+        $sql = "UPDATE user_documents SET updated_at = NOW(), expires_at = :expires_at";
+
+        // front画像
+        if (!empty($blobs['front'])) {
+            $sql .= ", front_image = :front_image, front_image_name = :front_name";
+        } elseif ($deleteFront) {
+            $sql .= ", front_image = NULL, front_image_name = NULL";
+        }
+
+        // back画像
+        if (!empty($blobs['back'])) {
+            $sql .= ", back_image = :back_image, back_image_name = :back_name";
+        } elseif ($deleteBack) {
+            $sql .= ", back_image = NULL, back_image_name = NULL";
+        }
+
+        $sql .= " WHERE user_id = :user_id";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':expires_at', $expiresAt);
+        $stmt->bindValue(':user_id', $id, PDO::PARAM_INT);
+
+        if (!empty($blobs['front'])) {
+            $stmt->bindValue(':front_image', $blobs['front'], PDO::PARAM_LOB);
+            $stmt->bindValue(':front_name', $frontName);
+        }
+
+        if (!empty($blobs['back'])) {
+            $stmt->bindValue(':back_image', $blobs['back'], PDO::PARAM_LOB);
+            $stmt->bindValue(':back_name', $backName);
+        }
+
+        $stmt->execute();
+    } else {
+        // 🔹 INSERT（画像が1つでもアップロードされたら作成）
+        if (!empty($blobs['front']) || !empty($blobs['back'])) {
+            $sql = "INSERT INTO user_documents
+            (user_id, front_image, back_image, front_image_name, back_image_name, expires_at, created_at, updated_at)
+            VALUES (:user_id, :front_image, :back_image, :front_name, :back_name, :expires_at, NOW(), NOW())";
+            $stmt = $pdo->prepare($sql);
+
+            $stmt->bindValue(':user_id', $id, PDO::PARAM_INT);
+            $stmt->bindValue(':front_image', !empty($blobs['front']) ? $blobs['front'] : null, PDO::PARAM_LOB);
+            $stmt->bindValue(':back_image', !empty($blobs['back']) ? $blobs['back'] : null, PDO::PARAM_LOB);
+            $stmt->bindValue(':front_name', $frontName);
+            $stmt->bindValue(':back_name', $backName);
+            $stmt->bindValue(':expires_at', $expiresAt);
+
+            $stmt->execute();
+        }
     }
 
     // 8. トランザクションコミット
@@ -194,6 +238,7 @@ try {
 
 <?php
 unset($_SESSION['files'], $_SESSION['file_names'], $_SESSION['input_data'], $_SESSION['source']);
+session_unset();
 ?>
 
 </html>
